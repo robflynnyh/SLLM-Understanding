@@ -13,6 +13,7 @@ export UV_CACHE_DIR
 export HF_HOME
 export HUGGINGFACE_HUB_CACHE="${HUGGINGFACE_HUB_CACHE:-$HF_HOME/hub}"
 export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$ROOT_DIR/.cache}"
+export PIP_CACHE_DIR="${PIP_CACHE_DIR:-$ROOT_DIR/.cache/pip}"
 
 uv venv --python "$PYTHON_BIN" "$KIMI_VENV"
 # shellcheck disable=SC1091
@@ -46,4 +47,3 @@ print("torch", torch.__version__, "cuda", torch.version.cuda, "available", torch
 print("transformers", transformers.__version__)
 print("KimiAudio import ok", KimiAudio)
 PY
-
