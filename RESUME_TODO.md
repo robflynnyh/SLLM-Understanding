@@ -90,6 +90,14 @@ Approx sizes after prep/download:
   - Rows run: `1`
   - The response parsed cleanly as one JSON object with all `40` expected emotions, no missing/extra/invalid score keys.
   - The first raw all-at-once response assigned `0` to every emotion, so format is validated but score quality needs a larger check.
+- Human-rubric one-by-one mode added:
+  - Builder mode: `--mode one_by_one_human_rubric`
+  - Prompt asks for the presence of one emotion on the human-style `0/1/2` scale.
+  - Rubric: `0` absent, `1` weakly or ambiguously present, `2` clearly or strongly present.
+  - Runner parses this mode into `raw_parsed_score` and `raw_parsed_score_0_2`, while preserving raw text.
+  - A full 40-emotion row-level smoke for row `537` wrote `runs/kimi_check_human_rubric_row537_all_raw.jsonl`.
+  - Target emotion `Embarrassment` parsed as `0`; the row's human mean raw score is `0.3333333333333333`.
+  - Nonzero model rubric scores were all `1`: `Contentment`, `Hope`, `Triumph`, `Pride`, `Interest`, `Concentration`, `Contemplation`, `Doubt`, `Confusion`, `Contempt`, `Fatigue`, and `Emotional Numbness`.
 
 ## Active Process At Handoff
 
@@ -151,7 +159,20 @@ No Kimi setup, model download, EmoNet prep, or Kimi smoke process was still runn
    ```
 
 3. If the larger smokes are stable, run the full `runs/emonet_smoke_requests.jsonl` file or build a manifest-sized request subset for calibration experiments.
-4. Add scoring/aggregation scripts only after enough raw Kimi outputs exist to validate the format.
+4. Build and smoke the human-rubric request file:
+
+   ```bash
+   cd /exp/exp4/acp21rjf/SLLM-understanding
+   . .venv-kimi/bin/activate
+   python scripts/build_emonet_requests.py \
+     --data-root /store/store5/acp21rjf/data/emonet-voice-bench \
+     --manifest /store/store5/acp21rjf/data/emonet-voice-bench/manifests/smoke.jsonl \
+     --output runs/emonet_smoke_human_rubric_requests.jsonl \
+     --emotion-set official40 \
+     --mode one_by_one_human_rubric
+   ```
+
+5. Add scoring/aggregation scripts only after enough raw Kimi outputs exist to validate the format.
 
 ## Loader Notes
 

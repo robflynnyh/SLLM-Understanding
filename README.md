@@ -98,6 +98,23 @@ scores should always be preserved. Calibration methods should read those raw
 scores and write separate derived fields or files, never overwrite the original
 model scores.
 
+To use the human-style 0-2 presence rubric instead:
+
+```bash
+python scripts/build_emonet_requests.py \
+  --data-root /store/store5/acp21rjf/data/emonet-voice-bench \
+  --output runs/emonet_human_rubric_requests.jsonl \
+  --mode one_by_one_human_rubric
+```
+
+The rubric prompt asks for a single score:
+
+```text
+0 = the emotion is not present in the audio.
+1 = the emotion is weakly or ambiguously present in the audio.
+2 = the emotion is clearly or strongly present in the audio.
+```
+
 For the all-at-once evaluation variant, emit one request per audio. The prompt
 requires the model to return a single JSON object with one numeric score for
 every emotion:

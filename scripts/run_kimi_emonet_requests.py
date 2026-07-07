@@ -31,12 +31,18 @@ def configure_hf_cache() -> None:
     hf_home.mkdir(parents=True, exist_ok=True)
 
 
-def parse_score(text: str) -> float | None:
+def score_field_suffix(score_scale: dict[str, Any]) -> str:
+    min_score = int(score_scale["min"])
+    max_score = int(score_scale["max"])
+    return f"{min_score}_{max_score}"
+
+
+def parse_score(text: str, score_scale: dict[str, Any]) -> float | None:
     match = re.search(r"[-+]?(?:\d+\.\d+|\d+)", text)
     if not match:
         return None
     value = float(match.group(0))
-    if 1.0 <= value <= 10.0:
+    if float(score_scale["min"]) <= value <= float(score_scale["max"]):
         return value
     return None
 
@@ -284,14 +290,17 @@ def build_prediction(request: dict[str, Any], text: str) -> dict[str, Any]:
         "prompt": request["prompt"],
         "raw_response_text": text,
         "raw_score_scale": request["raw_score_scale"],
+        "human_mean_score_raw_0_2": request.get("human_mean_score_raw_0_2"),
         "human_mean_score_0_10": request.get("human_mean_score_0_10"),
         "model": "moonshotai/Kimi-Audio-7B-Instruct",
     }
-    if mode == "one_by_one":
+    if mode in {"one_by_one", "one_by_one_human_rubric"}:
+        parsed_score = parse_score(text, request["raw_score_scale"])
         prediction.update(
             {
                 "scored_emotion": request["scored_emotion"],
-                "raw_parsed_score_1_10": parse_score(text),
+                "raw_parsed_score": parsed_score,
+                f"raw_parsed_score_{score_field_suffix(request['raw_score_scale'])}": parsed_score,
             }
         )
         return prediction

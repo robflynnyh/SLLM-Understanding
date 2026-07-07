@@ -89,9 +89,11 @@ def build_one_by_one_requests(
     rows: list[dict[str, Any]],
     emotions: list[str],
     output_path: Path,
+    mode: str = "one_by_one",
+    config_key: str = "one_by_one",
 ) -> None:
     eval_config = load_json(EVAL_CONFIG_PATH)
-    one_by_one = eval_config["one_by_one"]
+    one_by_one = eval_config[config_key]
     prompt_template = one_by_one["prompt_template"]
     raw_score_scale = score_scale(one_by_one)
 
@@ -102,13 +104,14 @@ def build_one_by_one_requests(
             for emotion in emotions:
                 request = {
                     "request_id": f"row-{row_id:06d}__emotion-{slug(emotion)}",
-                    "mode": "one_by_one",
+                    "mode": mode,
                     "row_id": row_id,
                     "audio_path": audio_path(data_root, row),
                     "target_label": row["target_label"],
                     "scored_emotion": emotion,
                     "prompt": prompt_template.format(emotion=emotion),
                     "raw_score_scale": raw_score_scale,
+                    "human_mean_score_raw_0_2": row.get("mean_score_raw_0_2"),
                     "human_mean_score_0_10": row.get("mean_score_0_10"),
                     "preserve_raw_scores": True,
                 }
@@ -140,6 +143,7 @@ def build_all_at_once_requests(
                 "scored_emotions": emotions,
                 "prompt": prompt_template.format(emotion_lines=emotion_lines),
                 "raw_score_scale": raw_score_scale,
+                "human_mean_score_raw_0_2": row.get("mean_score_raw_0_2"),
                 "human_mean_score_0_10": row.get("mean_score_0_10"),
                 "preserve_raw_scores": True,
             }
@@ -155,6 +159,16 @@ def build_requests(
 ) -> None:
     if mode == "one_by_one":
         build_one_by_one_requests(data_root, rows, emotions, output_path)
+        return
+    if mode == "one_by_one_human_rubric":
+        build_one_by_one_requests(
+            data_root,
+            rows,
+            emotions,
+            output_path,
+            mode="one_by_one_human_rubric",
+            config_key="one_by_one_human_rubric",
+        )
         return
     if mode == "all_at_once":
         build_all_at_once_requests(data_root, rows, emotions, output_path)
@@ -179,9 +193,9 @@ def main() -> int:
     )
     parser.add_argument(
         "--mode",
-        choices=["one_by_one", "all_at_once"],
+        choices=["one_by_one", "one_by_one_human_rubric", "all_at_once"],
         default="one_by_one",
-        help="one request per audio/emotion pair or one request per audio for every emotion",
+        help="one request per audio/emotion pair, the 0-2 human-rubric variant, or one request per audio for every emotion",
     )
     parser.add_argument("--limit", type=int, help="limit manifest rows for smoke tests")
     args = parser.parse_args()
@@ -195,7 +209,7 @@ def main() -> int:
     print(f"mode: {args.mode}")
     print(f"rows: {len(rows)}")
     print(f"emotions_per_row: {len(emotions)}")
-    request_count = len(rows) * len(emotions) if args.mode == "one_by_one" else len(rows)
+    request_count = len(rows) if args.mode == "all_at_once" else len(rows) * len(emotions)
     print(f"requests: {request_count}")
     return 0
 
