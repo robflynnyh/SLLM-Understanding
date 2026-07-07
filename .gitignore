@@ -1,0 +1,13 @@
+.cache/
+.hf-cache/
+.uv-cache/
+.venv/
+__pycache__/
+*.py[cod]
+
+# Large or generated experiment artifacts.
+data/
+outputs/
+runs/
+scratch/
+
