@@ -126,6 +126,19 @@ The rubric prompt asks for a single score:
 2 = the emotion is clearly or strongly present in the audio.
 ```
 
+To ask the model directly for the paper-comparable 0-10 score:
+
+```bash
+python scripts/build_emonet_requests.py \
+  --data-root /store/store5/acp21rjf/data/emonet-voice-bench \
+  --output runs/emonet_target_paper_0_10_requests.jsonl \
+  --mode one_by_one_paper_0_10 \
+  --emotion-set target
+```
+
+The paper-scale prompt defines `0` as absent, `5` as mildly or ambiguously
+present, and `10` as strongly present.
+
 There is also a contrastive 0-2 rubric that asks for both the emotion and an
 explicit opposite or contrast state:
 
