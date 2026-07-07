@@ -1,7 +1,7 @@
 ---
 tracker:
   kind: linear
-  project_slug: "sllm-understanding"
+  project_slug: "sllm-understanding-0a901958c5f5"
   api_key: $LINEAR_API_KEY
   active_states:
     - Todo
