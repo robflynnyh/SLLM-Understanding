@@ -126,11 +126,24 @@ still roughly 23GB plus any secondary tokenizer downloads.
 Run a small request file:
 
 ```bash
+TMPDIR=$PWD/scratch/tmp \
+TEMP=$PWD/scratch/tmp \
+TMP=$PWD/scratch/tmp \
+XDG_CACHE_HOME=$PWD/.cache \
+PIP_CACHE_DIR=$PWD/.cache/pip \
+HF_HOME=/store/store5/acp21rjf/hf-cache \
+HUGGINGFACE_HUB_CACHE=/store/store5/acp21rjf/hf-cache/hub \
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
+CUDA_VISIBLE_DEVICES=0,1,2,3 \
 python scripts/run_kimi_emonet_requests.py \
   --model-path /store/store5/acp21rjf/models/Kimi-Audio-7B-Instruct \
   --requests runs/emonet_one_by_one_requests.jsonl \
   --output runs/kimi_predictions_raw.jsonl \
-  --limit 10
+  --limit 10 \
+  --device-map auto \
+  --max-primary-gpu-memory 10GiB \
+  --max-gpu-memory 18GiB \
+  --max-cpu-memory 96GiB
 ```
 
 ## Label Scales

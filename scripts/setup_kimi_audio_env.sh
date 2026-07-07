@@ -32,7 +32,7 @@ python -m pip install \
 
 python -m pip install \
   --upgrade-strategy only-if-needed \
-  transformers accelerate soundfile librosa tqdm loguru huggingface_hub \
+  transformers==4.47.1 accelerate soundfile librosa tqdm loguru huggingface_hub \
   conformer diffusers tiktoken timm torchdyn omegaconf hyperpyyaml \
   sentencepiece easydict fire ujson immutabledict rich wget gdown \
   datasets jsonlines pandas validators sty sox six blobfile sacrebleu \

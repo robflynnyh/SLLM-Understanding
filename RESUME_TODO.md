@@ -20,7 +20,7 @@ Get `moonshotai/Kimi-Audio-7B-Instruct` running on a tiny EmoNet smoke test, wit
 - Repo: `/exp/exp4/acp21rjf/SLLM-understanding`
 - Remote: `https://github.com/robflynnyh/SLLM-Understanding`
 - Branch: `main`
-- Latest pushed commits before this note:
+- Latest pushed commits before the 2026-07-07 smoke continuation:
   - `5c8fecf Add EmoNet data preparation scaffold`
   - `b6561ee Add Kimi Audio evaluation setup`
   - `0b4c7c5 Add EmoNet smoke and quick split builder`
@@ -59,7 +59,7 @@ Approx sizes after prep/download:
   - `torch 2.6.0+cu118`
   - CUDA runtime `11.8`
   - `torch.cuda.is_available() == True`
-  - `transformers 5.13.0`
+  - `transformers 4.47.1`
   - `from kimia_infer.api.kimia import KimiAudio` works
 - Kimi text-only snapshot downloaded successfully:
   - Command: `. .venv-kimi/bin/activate && python scripts/download_kimi_audio.py`
@@ -70,49 +70,62 @@ Approx sizes after prep/download:
   - Manifest: `/store/store5/acp21rjf/data/emonet-voice-bench/manifests/train.jsonl`
   - Rows: `12600`
   - Extracted data root size: about `2.1G`
+- Deterministic split build completed:
+  - Command: `python scripts/build_emonet_splits.py --data-root /store/store5/acp21rjf/data/emonet-voice-bench --overwrite`
+  - Smoke manifest: `/store/store5/acp21rjf/data/emonet-voice-bench/manifests/smoke.jsonl`
+  - Quick manifest: `/store/store5/acp21rjf/data/emonet-voice-bench/manifests/quick.jsonl`
+  - Local prepared official-label manifest currently has 36 labels, so smoke rows are `36` and quick rows are `360`.
+- Request build completed:
+  - Command: `python scripts/build_emonet_requests.py --data-root /store/store5/acp21rjf/data/emonet-voice-bench --manifest /store/store5/acp21rjf/data/emonet-voice-bench/manifests/smoke.jsonl --output runs/emonet_smoke_requests.jsonl --emotion-set official40`
+  - Output: `runs/emonet_smoke_requests.jsonl`
+  - Rows: `36`; emotions per row: `40`; total requests: `1440`.
+- Tiny Kimi smoke completed successfully:
+  - Output: `runs/kimi_smoke_raw.jsonl`
+  - Rows: `5`
+  - Raw responses were parseable integer scores.
+  - `runs/` is gitignored, so these outputs are local artifacts.
 
 ## Active Process At Handoff
 
-No Kimi setup, model download, or EmoNet prep process was still running when this note was updated.
+No Kimi setup, model download, EmoNet prep, or Kimi smoke process was still running when this note was updated.
 
 ## Next Todo
 
-1. Build deterministic smoke/quick splits:
+1. Run a larger local smoke, still before the full request set:
 
    ```bash
    cd /exp/exp4/acp21rjf/SLLM-understanding
    . .venv-kimi/bin/activate
-   python scripts/build_emonet_splits.py \
-     --data-root /store/store5/acp21rjf/data/emonet-voice-bench \
-     --overwrite
-   ```
-
-2. Build a tiny Kimi request file first, not the full 1600-request smoke:
-
-   ```bash
-   python scripts/build_emonet_requests.py \
-     --data-root /store/store5/acp21rjf/data/emonet-voice-bench \
-     --manifest /store/store5/acp21rjf/data/emonet-voice-bench/manifests/smoke.jsonl \
-     --output runs/emonet_smoke_requests.jsonl \
-     --emotion-set official40
-   ```
-
-3. Run only a few Kimi requests first:
-
-   ```bash
-   CUDA_VISIBLE_DEVICES=0 python scripts/run_kimi_emonet_requests.py \
+   TMPDIR=$PWD/scratch/tmp \
+   TEMP=$PWD/scratch/tmp \
+   TMP=$PWD/scratch/tmp \
+   XDG_CACHE_HOME=$PWD/.cache \
+   PIP_CACHE_DIR=$PWD/.cache/pip \
+   HF_HOME=/store/store5/acp21rjf/hf-cache \
+   HUGGINGFACE_HUB_CACHE=/store/store5/acp21rjf/hf-cache/hub \
+   PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
+   CUDA_VISIBLE_DEVICES=0,1,2,3 \
+   python scripts/run_kimi_emonet_requests.py \
      --model-path /store/store5/acp21rjf/models/Kimi-Audio-7B-Instruct \
      --requests runs/emonet_smoke_requests.jsonl \
-     --output runs/kimi_smoke_raw.jsonl \
-     --limit 5 \
-     --overwrite
+     --output runs/kimi_smoke_raw_50.jsonl \
+     --limit 50 \
+     --overwrite \
+     --device-map auto \
+     --max-primary-gpu-memory 10GiB \
+     --max-gpu-memory 18GiB \
+     --max-cpu-memory 96GiB
    ```
 
-4. If the model OOMs on a 20GB RTX A4500, inspect/patch the Kimi loader.
-   - Upstream `KimiAudio.__init__` loads `AutoModelForCausalLM.from_pretrained(..., torch_dtype=torch.bfloat16, trust_remote_code=True)` and then calls `.to(torch.cuda.current_device())`.
-   - There is no `device_map` in that path, so single-GPU OOM is plausible.
-   - Likely next options: add a repo-side patched loader using `device_map="auto"`/multi-GPU, or test lower-memory loading if supported by the remote model code.
-5. If smoke succeeds, commit any new code/docs and push remaining changes.
+2. If the larger smoke is stable, run the full `runs/emonet_smoke_requests.jsonl` file or build a manifest-sized request subset for calibration experiments.
+3. Add scoring/aggregation scripts only after enough raw Kimi outputs exist to validate the format.
+
+## Loader Notes
+
+- The Kimi repo dependency metadata does not pin `transformers`; the installed package only requires bare `transformers`.
+- The model config says it was saved with `transformers_version: 4.44.1`, but local testing found `4.47.1` keeps the required Kimi/Qwen2 API shape while avoiding the 5.x API drift.
+- The local `whisper-large-v3/model.safetensors` has no safetensors metadata. The runner patches Transformers' safetensors reader in-process to treat metadata-less files as PyTorch format without editing the 3GB checkpoint.
+- Single-GPU loading OOMed on a 20GB RTX A4500. The runner now supports `--device-map auto` plus `--max-primary-gpu-memory` to leave room on GPU 0 for the audio tokenizer and Whisper sidecar.
 
 ## Important Script Files
 
