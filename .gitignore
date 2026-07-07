@@ -12,3 +12,9 @@ data/
 outputs/
 runs/
 scratch/
+
+# Symphony local runtime files.
+symphony/.env
+symphony/.scratch/
+symphony/logs/
+symphony/tmp/
