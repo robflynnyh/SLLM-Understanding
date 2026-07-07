@@ -28,9 +28,10 @@ python -m pip install --upgrade pip setuptools wheel packaging ninja
 # wheels rather than newer CUDA 12.4/12.6 wheels that require newer drivers.
 python -m pip install \
   --index-url https://download.pytorch.org/whl/cu118 \
-  torch==2.6.0+cu118 torchaudio==2.6.0+cu118
+  torch==2.6.0+cu118 torchaudio==2.6.0+cu118 torchvision==0.21.0+cu118
 
 python -m pip install \
+  --upgrade-strategy only-if-needed \
   transformers accelerate soundfile librosa tqdm loguru huggingface_hub \
   conformer diffusers tiktoken timm torchdyn omegaconf hyperpyyaml \
   sentencepiece easydict fire ujson immutabledict rich wget gdown \
