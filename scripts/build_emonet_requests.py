@@ -63,6 +63,8 @@ def emotion_list(rows: list[dict[str, Any]], emotion_set: str) -> list[str]:
         return official_40 + extra_labels
     if emotion_set == "manifest":
         return sorted({str(row["target_label"]) for row in rows})
+    if emotion_set == "target":
+        return []
     raise ValueError(f"unknown emotion set: {emotion_set}")
 
 
@@ -91,6 +93,7 @@ def build_one_by_one_requests(
     output_path: Path,
     mode: str = "one_by_one",
     config_key: str = "one_by_one",
+    target_only: bool = False,
 ) -> None:
     eval_config = load_json(EVAL_CONFIG_PATH)
     one_by_one = eval_config[config_key]
@@ -101,7 +104,8 @@ def build_one_by_one_requests(
     with output_path.open("w", encoding="utf-8") as handle:
         for row in rows:
             row_id = int(row["row_id"])
-            for emotion in emotions:
+            row_emotions = [str(row["target_label"])] if target_only else emotions
+            for emotion in row_emotions:
                 request = {
                     "request_id": f"row-{row_id:06d}__emotion-{slug(emotion)}",
                     "mode": mode,
@@ -152,13 +156,21 @@ def build_all_at_once_requests(
 
 def build_requests(
     mode: str,
+    emotion_set: str,
     data_root: Path,
     rows: list[dict[str, Any]],
     emotions: list[str],
     output_path: Path,
 ) -> None:
+    target_only = emotion_set == "target"
     if mode == "one_by_one":
-        build_one_by_one_requests(data_root, rows, emotions, output_path)
+        build_one_by_one_requests(
+            data_root,
+            rows,
+            emotions,
+            output_path,
+            target_only=target_only,
+        )
         return
     if mode == "one_by_one_human_rubric":
         build_one_by_one_requests(
@@ -168,9 +180,12 @@ def build_requests(
             output_path,
             mode="one_by_one_human_rubric",
             config_key="one_by_one_human_rubric",
+            target_only=target_only,
         )
         return
     if mode == "all_at_once":
+        if target_only:
+            raise ValueError("--emotion-set target is only valid for one-by-one modes")
         build_all_at_once_requests(data_root, rows, emotions, output_path)
         return
     raise ValueError(f"unknown mode: {mode}")
@@ -187,9 +202,9 @@ def main() -> int:
     )
     parser.add_argument(
         "--emotion-set",
-        choices=["official40", "all42", "manifest"],
+        choices=["official40", "all42", "manifest", "target"],
         default="official40",
-        help="which emotions to score for each audio",
+        help="which emotions to score for each audio; target scores only each row's target_label",
     )
     parser.add_argument(
         "--mode",
@@ -199,17 +214,21 @@ def main() -> int:
     )
     parser.add_argument("--limit", type=int, help="limit manifest rows for smoke tests")
     args = parser.parse_args()
+    if args.mode == "all_at_once" and args.emotion_set == "target":
+        parser.error("--emotion-set target is only valid for one-by-one modes")
 
     data_root = resolve_data_root(args.data_root)
     rows = list(read_manifest(manifest_path(data_root, args.manifest), args.limit))
     emotions = emotion_list(rows, args.emotion_set)
     output_path = Path(args.output).expanduser().resolve()
-    build_requests(args.mode, data_root, rows, emotions, output_path)
+    build_requests(args.mode, args.emotion_set, data_root, rows, emotions, output_path)
     print(f"wrote: {output_path}")
     print(f"mode: {args.mode}")
+    print(f"emotion_set: {args.emotion_set}")
     print(f"rows: {len(rows)}")
-    print(f"emotions_per_row: {len(emotions)}")
-    request_count = len(rows) if args.mode == "all_at_once" else len(rows) * len(emotions)
+    emotions_per_row = 1 if args.emotion_set == "target" else len(emotions)
+    print(f"emotions_per_row: {emotions_per_row}")
+    request_count = len(rows) if args.mode == "all_at_once" else len(rows) * emotions_per_row
     print(f"requests: {request_count}")
     return 0
 

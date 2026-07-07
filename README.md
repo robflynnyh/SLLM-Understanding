@@ -107,6 +107,17 @@ python scripts/build_emonet_requests.py \
   --mode one_by_one_human_rubric
 ```
 
+To save compute by scoring only each row's target emotion, add
+`--emotion-set target`:
+
+```bash
+python scripts/build_emonet_requests.py \
+  --data-root /store/store5/acp21rjf/data/emonet-voice-bench \
+  --output runs/emonet_target_human_rubric_requests.jsonl \
+  --mode one_by_one_human_rubric \
+  --emotion-set target
+```
+
 The rubric prompt asks for a single score:
 
 ```text

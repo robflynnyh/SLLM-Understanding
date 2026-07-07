@@ -98,6 +98,13 @@ Approx sizes after prep/download:
   - A full 40-emotion row-level smoke for row `537` wrote `runs/kimi_check_human_rubric_row537_all_raw.jsonl`.
   - Target emotion `Embarrassment` parsed as `0`; the row's human mean raw score is `0.3333333333333333`.
   - Nonzero model rubric scores were all `1`: `Contentment`, `Hope`, `Triumph`, `Pride`, `Interest`, `Concentration`, `Contemplation`, `Doubt`, `Confusion`, `Contempt`, `Fatigue`, and `Emotional Numbness`.
+- Target-only human-rubric mode added:
+  - Use `--mode one_by_one_human_rubric --emotion-set target` to emit one request per row for only that row's `target_label`.
+  - A timed 100-request run wrote `runs/kimi_train100_target_human_rubric_raw.jsonl`.
+  - Command used `/usr/bin/time -p ... --limit 100 --max-new-tokens 8`.
+  - Wall time was `51.58s`, including model load.
+  - All 100 outputs parsed on the `0-2` scale; score counts were `0: 2`, `1: 19`, `2: 79`.
+  - Simple measured-rate estimates: smoke target-only `36` rows is about `19s`, quick target-only `360` rows is about `3.1m`, full train target-only `12600` rows is about `108m` / `1.8h`. These are rough and include the 100-run's model-load overhead in the rate.
 
 ## Active Process At Handoff
 
@@ -172,7 +179,20 @@ No Kimi setup, model download, EmoNet prep, or Kimi smoke process was still runn
      --mode one_by_one_human_rubric
    ```
 
-5. Add scoring/aggregation scripts only after enough raw Kimi outputs exist to validate the format.
+5. Build target-only human-rubric requests when only matched human target labels are needed:
+
+   ```bash
+   cd /exp/exp4/acp21rjf/SLLM-understanding
+   . .venv-kimi/bin/activate
+   python scripts/build_emonet_requests.py \
+     --data-root /store/store5/acp21rjf/data/emonet-voice-bench \
+     --manifest /store/store5/acp21rjf/data/emonet-voice-bench/manifests/train.jsonl \
+     --output runs/emonet_train_target_human_rubric_requests.jsonl \
+     --emotion-set target \
+     --mode one_by_one_human_rubric
+   ```
+
+6. Add scoring/aggregation scripts only after enough raw Kimi outputs exist to validate the format.
 
 ## Loader Notes
 
