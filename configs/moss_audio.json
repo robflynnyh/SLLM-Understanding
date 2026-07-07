@@ -1,0 +1,11 @@
+{
+  "model_id": "OpenMOSS-Team/MOSS-Audio-4B-Instruct",
+  "default_model_root": "/store/store5/acp21rjf/models/MOSS-Audio-4B-Instruct",
+  "default_hf_home": "/store/store5/acp21rjf/hf-cache",
+  "source_repo": "https://github.com/OpenMOSS/MOSS-Audio.git",
+  "source_commit": "5cbb1d823937cd5b5de3d8fa4d3a7253ebd3b883",
+  "notes": [
+    "The MOSS-Audio repo recommends torch 2.9.1+cu128, but this server driver is CUDA 12.2-era; setup_moss_audio_env.sh uses torch 2.6.0+cu118 for local compatibility.",
+    "Use the 4B Instruct checkpoint first for deterministic SER scoring; Thinking variants can be evaluated by overriding --model-root/--model-id."
+  ]
+}

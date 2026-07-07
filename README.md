@@ -212,6 +212,51 @@ python scripts/run_kimi_emonet_requests.py \
   --max-cpu-memory 96GiB
 ```
 
+## MOSS-Audio
+
+MOSS-Audio is the model family from `OpenMOSS/MOSS-Audio`, released as 4B/8B
+Instruct and Thinking variants. The default local target here is
+`OpenMOSS-Team/MOSS-Audio-4B-Instruct` because it is the smallest direct
+instruction-following checkpoint.
+
+Create the separate MOSS env:
+
+```bash
+scripts/setup_moss_audio_env.sh
+```
+
+Download the checkpoint to store5:
+
+```bash
+. .venv-moss/bin/activate
+python scripts/download_moss_audio.py
+```
+
+Run the target-only human 0-2 rubric requests:
+
+```bash
+TMPDIR=$PWD/scratch/tmp \
+TEMP=$PWD/scratch/tmp \
+TMP=$PWD/scratch/tmp \
+XDG_CACHE_HOME=$PWD/.cache \
+PIP_CACHE_DIR=$PWD/.cache/pip \
+HF_HOME=/store/store5/acp21rjf/hf-cache \
+HUGGINGFACE_HUB_CACHE=/store/store5/acp21rjf/hf-cache/hub \
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
+CUDA_VISIBLE_DEVICES=0,1,2,3 \
+python scripts/run_moss_emonet_requests.py \
+  --model-path /store/store5/acp21rjf/models/MOSS-Audio-4B-Instruct \
+  --requests runs/emonet_train100_target_human_rubric_requests.jsonl \
+  --output runs/moss_train100_target_human_rubric_raw.jsonl \
+  --limit 100 \
+  --overwrite \
+  --max-new-tokens 16 \
+  --device-map auto \
+  --max-primary-gpu-memory 10GiB \
+  --max-gpu-memory 18GiB \
+  --max-cpu-memory 96GiB
+```
+
 ## Label Scales
 
 The released human labels are discrete:
