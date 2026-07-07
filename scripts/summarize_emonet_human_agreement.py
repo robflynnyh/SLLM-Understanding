@@ -95,7 +95,7 @@ def rounded_mean(values: list[int]) -> int:
     return int(round(average([float(value) for value in values])))
 
 
-def build_rotations(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def build_rotations(rows: list[dict[str, Any]], reference: str) -> list[dict[str, Any]]:
     rotations: list[dict[str, Any]] = []
     for row in rows:
         scores = row.get("annotator_scores_raw_0_2", {})
@@ -103,7 +103,12 @@ def build_rotations(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             continue
         annotator_scores = [(str(key), int(value)) for key, value in sorted(scores.items())]
         for held_out, prediction in annotator_scores:
-            reference_scores = [score for annotator, score in annotator_scores if annotator != held_out]
+            if reference == "all_annotators":
+                reference_scores = [score for _, score in annotator_scores]
+            else:
+                reference_scores = [
+                    score for annotator, score in annotator_scores if annotator != held_out
+                ]
             reference_mean = average([float(score) for score in reference_scores])
             rotations.append(
                 {
@@ -128,10 +133,16 @@ def main() -> int:
         help="manifest JSONL path; defaults to configured train manifest",
     )
     parser.add_argument("--limit", type=int, help="limit manifest rows from the start")
+    parser.add_argument(
+        "--reference",
+        choices=["leave_one_out", "all_annotators"],
+        default="leave_one_out",
+        help="reference aggregation for the human target; all_annotators includes the held-out score",
+    )
     args = parser.parse_args()
 
     rows = read_manifest(Path(args.manifest).expanduser().resolve(), args.limit)
-    rotations = build_rotations(rows)
+    rotations = build_rotations(rows, args.reference)
     if not rotations:
         raise SystemExit("no rows with at least two annotators found")
 
@@ -201,7 +212,7 @@ def main() -> int:
     print(f"rows: {len(rows)}")
     print(f"rows_with_2plus_annotators: {len(by_row)}")
     print(f"held_out_ratings: {len(rotations)}")
-    print("reference: leave_one_annotator_out")
+    print(f"reference: {args.reference}")
     print("prediction_scale: 0_10")
     print("error_scale: paper_0_10")
     print(f"pooled_accuracy_vs_majority: {acc_majority:.1%}")
