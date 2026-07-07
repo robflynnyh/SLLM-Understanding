@@ -2,6 +2,8 @@
 .hf-cache/
 .uv-cache/
 .venv/
+.venv-*/
+.venv*/
 __pycache__/
 *.py[cod]
 
@@ -10,4 +12,3 @@ data/
 outputs/
 runs/
 scratch/
-

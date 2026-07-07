@@ -61,6 +61,63 @@ $EMONET_DATA_ROOT/manifests/train.jsonl
 Each manifest row contains the audio path, target emotion, raw human votes on
 the 0-2 scale, mapped votes on the 0-10 scale, and aggregate scores.
 
+## Model Requests
+
+For the one-by-one evaluation variant, build request JSONL from a prepared
+manifest:
+
+```bash
+python scripts/build_emonet_requests.py \
+  --data-root /store/store5/acp21rjf/data/emonet-voice-bench \
+  --output runs/emonet_one_by_one_requests.jsonl
+```
+
+The prompt template is:
+
+```text
+Score this audio from 1-10 based on the presence of the following emotion: {emotion}
+```
+
+This emits one request per audio/emotion pair. Raw model outputs and parsed raw
+scores should always be preserved. Calibration methods should read those raw
+scores and write separate derived fields or files, never overwrite the original
+model scores.
+
+## Kimi-Audio
+
+The first open audio-language model target is
+`moonshotai/Kimi-Audio-7B-Instruct`. The current server driver is CUDA 12.2, so
+the setup script uses PyTorch 2.6 CUDA 11.8 wheels in a project-local venv
+rather than touching any shared conda environment.
+
+Create the env:
+
+```bash
+scripts/setup_kimi_audio_env.sh
+```
+
+Download the text-output subset of the Kimi checkpoint to store5:
+
+```bash
+. .venv-kimi/bin/activate
+python scripts/download_kimi_audio.py
+```
+
+This intentionally skips the large audio detokenizer/vocoder files. For SER
+scoring we call `KimiAudio(..., load_detokenizer=False)`, because we only need
+text outputs. The full HF snapshot is about 42.6GB; the text-output subset is
+still roughly 23GB plus any secondary tokenizer downloads.
+
+Run a small request file:
+
+```bash
+python scripts/run_kimi_emonet_requests.py \
+  --model-path /store/store5/acp21rjf/models/Kimi-Audio-7B-Instruct \
+  --requests runs/emonet_one_by_one_requests.jsonl \
+  --output runs/kimi_predictions_raw.jsonl \
+  --limit 10
+```
+
 ## Label Scales
 
 The released human labels are discrete:
@@ -76,4 +133,3 @@ For comparison with model outputs, the paper maps them to 0-10:
 1 -> 5
 2 -> 10
 ```
-

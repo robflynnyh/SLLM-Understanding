@@ -1,0 +1,18 @@
+{
+  "prediction_storage": {
+    "preserve_raw_scores": true,
+    "notes": "Calibration is a downstream transform. Never overwrite raw model outputs or raw parsed numeric scores."
+  },
+  "one_by_one": {
+    "prompt_template": "Score this audio from 1-10 based on the presence of the following emotion: {emotion}",
+    "score_min": 1,
+    "score_max": 10,
+    "description": "One model call per audio/emotion pair. Store raw scores for all emotions, then calibrate downstream."
+  },
+  "all_at_once": {
+    "score_min": 0,
+    "score_max": 10,
+    "description": "Paper-comparable mode: one model call per audio asking for all emotion scores."
+  }
+}
+

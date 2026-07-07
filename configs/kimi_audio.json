@@ -1,0 +1,25 @@
+{
+  "model_id": "moonshotai/Kimi-Audio-7B-Instruct",
+  "upstream_repo": "https://github.com/MoonshotAI/Kimi-Audio",
+  "upstream_commit": "349251e1d8f4f98d58fda59246381faecd7392e0",
+  "default_model_root": "/store/store5/acp21rjf/models/Kimi-Audio-7B-Instruct",
+  "default_hf_home": "/store/store5/acp21rjf/hf-cache",
+  "text_only_allow_patterns": [
+    "*.json",
+    "*.model",
+    "*.py",
+    "README.md",
+    "model*.safetensors",
+    "whisper-large-v3/*"
+  ],
+  "full_extra_allow_patterns": [
+    "audio_detokenizer/*",
+    "vocoder/*"
+  ],
+  "notes": [
+    "The full HF snapshot is about 42.6GB.",
+    "Text-only audio understanding can skip audio_detokenizer and vocoder downloads, but still needs the main model and whisper-large-v3 files.",
+    "Use KimiAudio(..., load_detokenizer=False) for SER scoring."
+  ]
+}
+
