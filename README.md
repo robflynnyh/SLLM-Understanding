@@ -61,6 +61,21 @@ $EMONET_DATA_ROOT/manifests/train.jsonl
 Each manifest row contains the audio path, target emotion, raw human votes on
 the 0-2 scale, mapped votes on the 0-10 scale, and aggregate scores.
 
+Build smaller deterministic manifests:
+
+```bash
+python scripts/build_emonet_splits.py \
+  --data-root /store/store5/acp21rjf/data/emonet-voice-bench
+```
+
+Defaults:
+
+- `smoke.jsonl`: 1 clip per official label, 40 clips total
+- `quick.jsonl`: 10 clips per official label, 400 clips total
+
+Use `--label-set all42` if you want to include the two extra HF labels
+`Authenticity` and `Arousal`.
+
 ## Model Requests
 
 For the one-by-one evaluation variant, build request JSONL from a prepared
