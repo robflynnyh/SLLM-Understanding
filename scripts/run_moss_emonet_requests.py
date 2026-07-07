@@ -187,6 +187,17 @@ def read_requests(path: Path, limit: int | None) -> list[dict[str, Any]]:
     return rows
 
 
+def infer_model_name(model_path: Path) -> str:
+    config_path = model_path / "config.json"
+    if config_path.exists():
+        with config_path.open("r", encoding="utf-8") as handle:
+            config = json.load(handle)
+        name_or_path = config.get("_name_or_path")
+        if isinstance(name_or_path, str) and name_or_path:
+            return name_or_path
+    return model_path.name
+
+
 def cuda_max_memory(
     max_gpu_memory: str | None,
     max_primary_gpu_memory: str | None,
@@ -362,6 +373,7 @@ def generate_text(
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model-path", required=True, help="local MOSS-Audio model path")
+    parser.add_argument("--model-name", help="model name recorded in prediction JSONL")
     parser.add_argument("--requests", required=True, help="request JSONL from build_emonet_requests.py")
     parser.add_argument("--output", required=True, help="raw prediction JSONL path")
     parser.add_argument("--limit", type=int, help="limit requests for smoke tests")
@@ -389,7 +401,7 @@ def main() -> int:
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     requests = read_requests(request_path, args.limit)
-    model_name = "OpenMOSS-Team/MOSS-Audio-4B-Instruct"
+    model_name = args.model_name or infer_model_name(model_path)
     model, processor = load_moss_audio(
         model_path=model_path,
         device_map=args.device_map,
