@@ -157,6 +157,28 @@ def parse_all_at_once_scores(
     }
 
 
+def parse_contrastive_scores(text: str, score_scale: dict[str, Any]) -> dict[str, Any]:
+    payload = parse_json_object(text)
+    if payload is None:
+        return {
+            "emotion_score": None,
+            "opposite_score": None,
+            "parse_error": "response did not contain a JSON object",
+        }
+
+    emotion_score = parse_numeric_score(payload.get("emotion_score"), score_scale)
+    opposite_score = parse_numeric_score(payload.get("opposite_score"), score_scale)
+    parse_error = None
+    if emotion_score is None or opposite_score is None:
+        parse_error = "JSON did not contain numeric emotion_score and opposite_score within scale"
+
+    return {
+        "emotion_score": emotion_score,
+        "opposite_score": opposite_score,
+        "parse_error": parse_error,
+    }
+
+
 def read_requests(path: Path, limit: int | None) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     with path.open("r", encoding="utf-8") as handle:
@@ -301,6 +323,25 @@ def build_prediction(request: dict[str, Any], text: str) -> dict[str, Any]:
                 "scored_emotion": request["scored_emotion"],
                 "raw_parsed_score": parsed_score,
                 f"raw_parsed_score_{score_field_suffix(request['raw_score_scale'])}": parsed_score,
+            }
+        )
+        return prediction
+
+    if mode == "one_by_one_contrastive_rubric":
+        parsed = parse_contrastive_scores(text, request["raw_score_scale"])
+        prediction.update(
+            {
+                "scored_emotion": request["scored_emotion"],
+                "opposite_emotion": request["opposite_emotion"],
+                "raw_parsed_emotion_score": parsed["emotion_score"],
+                f"raw_parsed_emotion_score_{score_field_suffix(request['raw_score_scale'])}": parsed[
+                    "emotion_score"
+                ],
+                "raw_parsed_opposite_score": parsed["opposite_score"],
+                f"raw_parsed_opposite_score_{score_field_suffix(request['raw_score_scale'])}": parsed[
+                    "opposite_score"
+                ],
+                "raw_parse_error": parsed["parse_error"],
             }
         )
         return prediction

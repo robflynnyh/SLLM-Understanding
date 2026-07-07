@@ -126,6 +126,23 @@ The rubric prompt asks for a single score:
 2 = the emotion is clearly or strongly present in the audio.
 ```
 
+There is also a contrastive 0-2 rubric that asks for both the emotion and an
+explicit opposite or contrast state:
+
+```bash
+python scripts/build_emonet_requests.py \
+  --data-root /store/store5/acp21rjf/data/emonet-voice-bench \
+  --output runs/emonet_target_contrastive_rubric_requests.jsonl \
+  --mode one_by_one_contrastive_rubric \
+  --emotion-set target
+```
+
+The required response format is:
+
+```json
+{"emotion_score": 0, "opposite_score": 0}
+```
+
 For the all-at-once evaluation variant, emit one request per audio. The prompt
 requires the model to return a single JSON object with one numeric score for
 every emotion:

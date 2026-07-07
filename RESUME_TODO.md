@@ -105,6 +105,12 @@ Approx sizes after prep/download:
   - Wall time was `51.58s`, including model load.
   - All 100 outputs parsed on the `0-2` scale; score counts were `0: 2`, `1: 19`, `2: 79`.
   - Simple measured-rate estimates: smoke target-only `36` rows is about `19s`, quick target-only `360` rows is about `3.1m`, full train target-only `12600` rows is about `108m` / `1.8h`. These are rough and include the 100-run's model-load overhead in the rate.
+- Contrastive human-rubric mode added:
+  - Builder mode: `--mode one_by_one_contrastive_rubric`.
+  - Each request asks for both the target emotion and an explicit opposite/contrast state on the `0/1/2` rubric.
+  - Output format is strict JSON: `{"emotion_score": 0, "opposite_score": 0}`.
+  - A 5-request target-only smoke wrote `runs/kimi_train5_target_contrastive_rubric_raw.jsonl`.
+  - All 5 outputs parsed cleanly; examples included `Helplessness` as `emotion_score=2, opposite_score=0` and `Shame` as both `0/2` and `2/0` on different rows.
 
 ## Active Process At Handoff
 

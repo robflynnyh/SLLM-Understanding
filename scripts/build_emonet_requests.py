@@ -86,6 +86,11 @@ def score_scale(config: dict[str, Any]) -> dict[str, int]:
     }
 
 
+def opposite_emotion(config: dict[str, Any], emotion: str) -> str:
+    opposites = config.get("opposites", {})
+    return str(opposites.get(emotion, f"absence of {emotion}"))
+
+
 def build_one_by_one_requests(
     data_root: Path,
     rows: list[dict[str, Any]],
@@ -106,6 +111,7 @@ def build_one_by_one_requests(
             row_id = int(row["row_id"])
             row_emotions = [str(row["target_label"])] if target_only else emotions
             for emotion in row_emotions:
+                opposite = opposite_emotion(one_by_one, emotion)
                 request = {
                     "request_id": f"row-{row_id:06d}__emotion-{slug(emotion)}",
                     "mode": mode,
@@ -113,12 +119,17 @@ def build_one_by_one_requests(
                     "audio_path": audio_path(data_root, row),
                     "target_label": row["target_label"],
                     "scored_emotion": emotion,
-                    "prompt": prompt_template.format(emotion=emotion),
+                    "prompt": prompt_template.format(
+                        emotion=emotion,
+                        opposite_emotion=opposite,
+                    ),
                     "raw_score_scale": raw_score_scale,
                     "human_mean_score_raw_0_2": row.get("mean_score_raw_0_2"),
                     "human_mean_score_0_10": row.get("mean_score_0_10"),
                     "preserve_raw_scores": True,
                 }
+                if "opposites" in one_by_one:
+                    request["opposite_emotion"] = opposite
                 handle.write(json.dumps(request, sort_keys=True) + "\n")
 
 
@@ -183,6 +194,17 @@ def build_requests(
             target_only=target_only,
         )
         return
+    if mode == "one_by_one_contrastive_rubric":
+        build_one_by_one_requests(
+            data_root,
+            rows,
+            emotions,
+            output_path,
+            mode="one_by_one_contrastive_rubric",
+            config_key="one_by_one_contrastive_rubric",
+            target_only=target_only,
+        )
+        return
     if mode == "all_at_once":
         if target_only:
             raise ValueError("--emotion-set target is only valid for one-by-one modes")
@@ -208,9 +230,14 @@ def main() -> int:
     )
     parser.add_argument(
         "--mode",
-        choices=["one_by_one", "one_by_one_human_rubric", "all_at_once"],
+        choices=[
+            "one_by_one",
+            "one_by_one_human_rubric",
+            "one_by_one_contrastive_rubric",
+            "all_at_once",
+        ],
         default="one_by_one",
-        help="one request per audio/emotion pair, the 0-2 human-rubric variant, or one request per audio for every emotion",
+        help="one request per audio/emotion pair, 0-2 rubric variants, or one request per audio for every emotion",
     )
     parser.add_argument("--limit", type=int, help="limit manifest rows for smoke tests")
     args = parser.parse_args()
