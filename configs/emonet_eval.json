@@ -15,6 +15,12 @@
     "score_max": 10,
     "description": "One model call per audio/emotion pair using the paper-comparable 0-10 scale."
   },
+  "one_by_one_paper_0_10_thinking": {
+    "prompt_template": "Score this audio from 0-10 based on the presence of the following emotion: {emotion}\n\nUse this scale:\n0 = the emotion is absent.\n5 = the emotion is mildly or ambiguously present.\n10 = the emotion is strongly present.\n\nThink through the audio cues briefly, then give the final answer on its own line in exactly this format:\nFinal score: <number from 0 to 10>",
+    "score_min": 0,
+    "score_max": 10,
+    "description": "One model call per audio/emotion pair using the paper-comparable 0-10 scale with an explicit final-score format for Thinking checkpoints."
+  },
   "one_by_one_human_rubric": {
     "prompt_template": "Rate the presence of the following emotion in the audio: {emotion}\n\nUse this 0-2 rubric:\n0 = the emotion is not present in the audio.\n1 = the emotion is weakly or ambiguously present in the audio.\n2 = the emotion is clearly or strongly present in the audio.\n\nReturn only a single number: 0, 1, or 2.",
     "score_min": 0,

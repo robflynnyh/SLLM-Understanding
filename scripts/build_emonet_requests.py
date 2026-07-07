@@ -194,6 +194,17 @@ def build_requests(
             target_only=target_only,
         )
         return
+    if mode == "one_by_one_paper_0_10_thinking":
+        build_one_by_one_requests(
+            data_root,
+            rows,
+            emotions,
+            output_path,
+            mode="one_by_one_paper_0_10_thinking",
+            config_key="one_by_one_paper_0_10_thinking",
+            target_only=target_only,
+        )
+        return
     if mode == "one_by_one_human_rubric":
         build_one_by_one_requests(
             data_root,
@@ -244,6 +255,7 @@ def main() -> int:
         choices=[
             "one_by_one",
             "one_by_one_paper_0_10",
+            "one_by_one_paper_0_10_thinking",
             "one_by_one_human_rubric",
             "one_by_one_contrastive_rubric",
             "all_at_once",

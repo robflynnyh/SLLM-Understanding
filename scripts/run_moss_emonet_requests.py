@@ -44,6 +44,27 @@ def parse_score(text: str, score_scale: dict[str, Any]) -> float | None:
     return None
 
 
+def parse_final_score(text: str, score_scale: dict[str, Any]) -> float | None:
+    payload = parse_json_object(text)
+    if payload is not None:
+        for key in ("score", "final_score"):
+            score = parse_numeric_score(payload.get(key), score_scale)
+            if score is not None:
+                return score
+
+    patterns = [
+        r"final\s*score\s*[:=]\s*([-+]?(?:\d+\.\d+|\d+))",
+        r"score\s*[:=]\s*([-+]?(?:\d+\.\d+|\d+))",
+    ]
+    for pattern in patterns:
+        matches = re.findall(pattern, text, flags=re.IGNORECASE)
+        for raw_value in reversed(matches):
+            value = float(raw_value)
+            if float(score_scale["min"]) <= value <= float(score_scale["max"]):
+                return value
+    return parse_score(text, score_scale)
+
+
 def parse_json_object(text: str) -> dict[str, Any] | None:
     stripped = text.strip()
     if stripped.startswith("```"):
@@ -272,8 +293,16 @@ def build_prediction(request: dict[str, Any], text: str, model_name: str) -> dic
         "human_mean_score_0_10": request.get("human_mean_score_0_10"),
         "model": model_name,
     }
-    if mode in {"one_by_one", "one_by_one_paper_0_10", "one_by_one_human_rubric"}:
-        parsed_score = parse_score(text, request["raw_score_scale"])
+    if mode in {
+        "one_by_one",
+        "one_by_one_paper_0_10",
+        "one_by_one_paper_0_10_thinking",
+        "one_by_one_human_rubric",
+    }:
+        if mode == "one_by_one_paper_0_10_thinking":
+            parsed_score = parse_final_score(text, request["raw_score_scale"])
+        else:
+            parsed_score = parse_score(text, request["raw_score_scale"])
         prediction.update(
             {
                 "scored_emotion": request["scored_emotion"],
