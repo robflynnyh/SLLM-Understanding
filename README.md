@@ -243,19 +243,19 @@ PIP_CACHE_DIR=$PWD/.cache/pip \
 HF_HOME=/store/store5/acp21rjf/hf-cache \
 HUGGINGFACE_HUB_CACHE=/store/store5/acp21rjf/hf-cache/hub \
 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
-CUDA_VISIBLE_DEVICES=0,1,2,3 \
+CUDA_VISIBLE_DEVICES=0 \
 python scripts/run_moss_emonet_requests.py \
   --model-path /store/store5/acp21rjf/models/MOSS-Audio-4B-Instruct \
   --requests runs/emonet_train100_target_human_rubric_requests.jsonl \
   --output runs/moss_train100_target_human_rubric_raw.jsonl \
   --limit 100 \
   --overwrite \
-  --max-new-tokens 16 \
-  --device-map auto \
-  --max-primary-gpu-memory 10GiB \
-  --max-gpu-memory 18GiB \
-  --max-cpu-memory 96GiB
+  --max-new-tokens 16
 ```
+
+Keep the 4B MOSS runner on one visible GPU. `--device-map auto` can split the
+audio and language paths onto different GPUs and fail inside the model's audio
+embedding scatter.
 
 ## Label Scales
 
