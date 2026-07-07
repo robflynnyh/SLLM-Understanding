@@ -98,6 +98,26 @@ scores should always be preserved. Calibration methods should read those raw
 scores and write separate derived fields or files, never overwrite the original
 model scores.
 
+For the all-at-once evaluation variant, emit one request per audio. The prompt
+requires the model to return a single JSON object with one numeric score for
+every emotion:
+
+```bash
+python scripts/build_emonet_requests.py \
+  --data-root /store/store5/acp21rjf/data/emonet-voice-bench \
+  --output runs/emonet_all_at_once_requests.jsonl \
+  --mode all_at_once
+```
+
+The required response format is:
+
+```json
+{"scores": {"Emotion Name": 0}}
+```
+
+All-at-once runs need a larger generation cap than one-by-one runs; use
+`--max-new-tokens 768` or higher for the official 40-emotion prompt.
+
 ## Kimi-Audio
 
 The first open audio-language model target is
@@ -140,6 +160,7 @@ python scripts/run_kimi_emonet_requests.py \
   --requests runs/emonet_one_by_one_requests.jsonl \
   --output runs/kimi_predictions_raw.jsonl \
   --limit 10 \
+  --max-new-tokens 16 \
   --device-map auto \
   --max-primary-gpu-memory 10GiB \
   --max-gpu-memory 18GiB \

@@ -10,9 +10,9 @@
     "description": "One model call per audio/emotion pair. Store raw scores for all emotions, then calibrate downstream."
   },
   "all_at_once": {
+    "prompt_template": "Score this audio for each listed emotion on a 0-10 scale, where 0 means the emotion is absent and 10 means the emotion is strongly present. Return only valid JSON in exactly this format: {{\"scores\": {{\"Emotion Name\": number}}}}. Include every listed emotion exactly once, use the exact emotion names, and do not include any text outside the JSON.\n\nEmotions:\n{emotion_lines}",
     "score_min": 0,
     "score_max": 10,
     "description": "Paper-comparable mode: one model call per audio asking for all emotion scores."
   }
 }
-

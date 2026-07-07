@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run Kimi-Audio on one-by-one EmoNet request JSONL files.
+"""Run Kimi-Audio on EmoNet request JSONL files.
 
 This runner preserves raw model text for calibration experiments. It writes one
 prediction JSONL row per request and never overwrites existing outputs unless
@@ -39,6 +39,116 @@ def parse_score(text: str) -> float | None:
     if 1.0 <= value <= 10.0:
         return value
     return None
+
+
+def parse_json_object(text: str) -> dict[str, Any] | None:
+    stripped = text.strip()
+    if stripped.startswith("```"):
+        lines = stripped.splitlines()
+        if lines and lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        stripped = "\n".join(lines).strip()
+
+    try:
+        value = json.loads(stripped)
+    except json.JSONDecodeError:
+        value = None
+    if isinstance(value, dict):
+        return value
+
+    start = stripped.find("{")
+    if start == -1:
+        return None
+
+    in_string = False
+    escaped = False
+    depth = 0
+    for index, char in enumerate(stripped[start:], start):
+        if escaped:
+            escaped = False
+            continue
+        if char == "\\":
+            escaped = True
+            continue
+        if char == '"':
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+        if char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                try:
+                    value = json.loads(stripped[start : index + 1])
+                except json.JSONDecodeError:
+                    return None
+                return value if isinstance(value, dict) else None
+    return None
+
+
+def parse_numeric_score(value: Any, score_scale: dict[str, Any]) -> float | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    score = float(value)
+    if float(score_scale["min"]) <= score <= float(score_scale["max"]):
+        return score
+    return None
+
+
+def parse_all_at_once_scores(
+    text: str,
+    expected_emotions: list[str],
+    score_scale: dict[str, Any],
+) -> dict[str, Any]:
+    payload = parse_json_object(text)
+    if payload is None:
+        return {
+            "scores": {},
+            "missing_emotions": expected_emotions,
+            "extra_emotions": [],
+            "invalid_scores": {},
+            "parse_error": "response did not contain a JSON object",
+        }
+
+    raw_scores = payload.get("scores", payload)
+    if not isinstance(raw_scores, dict):
+        return {
+            "scores": {},
+            "missing_emotions": expected_emotions,
+            "extra_emotions": [],
+            "invalid_scores": {},
+            "parse_error": "JSON scores field was not an object",
+        }
+
+    expected = set(expected_emotions)
+    parsed_scores: dict[str, float] = {}
+    invalid_scores: dict[str, Any] = {}
+    for emotion in expected_emotions:
+        if emotion not in raw_scores:
+            continue
+        score = parse_numeric_score(raw_scores[emotion], score_scale)
+        if score is None:
+            invalid_scores[emotion] = raw_scores[emotion]
+        else:
+            parsed_scores[emotion] = score
+
+    extra_emotions = sorted(str(emotion) for emotion in raw_scores if emotion not in expected)
+    missing_emotions = [emotion for emotion in expected_emotions if emotion not in parsed_scores]
+    parse_error = None
+    if missing_emotions or extra_emotions or invalid_scores:
+        parse_error = "JSON scores did not exactly match expected emotions and numeric scale"
+
+    return {
+        "scores": parsed_scores,
+        "missing_emotions": missing_emotions,
+        "extra_emotions": extra_emotions,
+        "invalid_scores": invalid_scores,
+        "parse_error": parse_error,
+    }
 
 
 def read_requests(path: Path, limit: int | None) -> list[dict[str, Any]]:
@@ -164,6 +274,49 @@ def load_kimi_audio(
     return model
 
 
+def build_prediction(request: dict[str, Any], text: str) -> dict[str, Any]:
+    mode = request.get("mode", "one_by_one")
+    prediction = {
+        "request_id": request["request_id"],
+        "mode": mode,
+        "row_id": request["row_id"],
+        "target_label": request["target_label"],
+        "prompt": request["prompt"],
+        "raw_response_text": text,
+        "raw_score_scale": request["raw_score_scale"],
+        "human_mean_score_0_10": request.get("human_mean_score_0_10"),
+        "model": "moonshotai/Kimi-Audio-7B-Instruct",
+    }
+    if mode == "one_by_one":
+        prediction.update(
+            {
+                "scored_emotion": request["scored_emotion"],
+                "raw_parsed_score_1_10": parse_score(text),
+            }
+        )
+        return prediction
+
+    if mode == "all_at_once":
+        parsed = parse_all_at_once_scores(
+            text=text,
+            expected_emotions=list(request["scored_emotions"]),
+            score_scale=request["raw_score_scale"],
+        )
+        prediction.update(
+            {
+                "scored_emotions": request["scored_emotions"],
+                "raw_parsed_scores_0_10": parsed["scores"],
+                "raw_parse_error": parsed["parse_error"],
+                "missing_emotions": parsed["missing_emotions"],
+                "extra_emotions": parsed["extra_emotions"],
+                "invalid_scores": parsed["invalid_scores"],
+            }
+        )
+        return prediction
+
+    raise ValueError(f"unknown request mode: {mode}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--requests", required=True, help="request JSONL from build_emonet_requests.py")
@@ -233,18 +386,7 @@ def main() -> int:
                 {"role": "user", "message_type": "audio", "content": request["audio_path"]},
             ]
             _, text = model.generate(messages, **sampling_params, output_type="text")
-            prediction = {
-                "request_id": request["request_id"],
-                "row_id": request["row_id"],
-                "target_label": request["target_label"],
-                "scored_emotion": request["scored_emotion"],
-                "prompt": request["prompt"],
-                "raw_response_text": text,
-                "raw_parsed_score_1_10": parse_score(text),
-                "raw_score_scale": request["raw_score_scale"],
-                "human_mean_score_0_10": request.get("human_mean_score_0_10"),
-                "model": "moonshotai/Kimi-Audio-7B-Instruct",
-            }
+            prediction = build_prediction(request, text)
             out.write(json.dumps(prediction, sort_keys=True) + "\n")
             out.flush()
 

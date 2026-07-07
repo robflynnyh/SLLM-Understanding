@@ -84,6 +84,12 @@ Approx sizes after prep/download:
   - Rows: `5`
   - Raw responses were parseable integer scores.
   - `runs/` is gitignored, so these outputs are local artifacts.
+- All-at-once request build and tiny smoke completed:
+  - Request command: `python scripts/build_emonet_requests.py --data-root /store/store5/acp21rjf/data/emonet-voice-bench --manifest /store/store5/acp21rjf/data/emonet-voice-bench/manifests/smoke.jsonl --output runs/emonet_smoke_all_at_once_requests.jsonl --emotion-set official40 --mode all_at_once --limit 2`
+  - Kimi output: `runs/kimi_smoke_all_at_once_raw.jsonl`
+  - Rows run: `1`
+  - The response parsed cleanly as one JSON object with all `40` expected emotions, no missing/extra/invalid score keys.
+  - The first raw all-at-once response assigned `0` to every emotion, so format is validated but score quality needs a larger check.
 
 ## Active Process At Handoff
 
@@ -91,7 +97,7 @@ No Kimi setup, model download, EmoNet prep, or Kimi smoke process was still runn
 
 ## Next Todo
 
-1. Run a larger local smoke, still before the full request set:
+1. Run a larger local one-by-one smoke, still before the full request set:
 
    ```bash
    cd /exp/exp4/acp21rjf/SLLM-understanding
@@ -117,8 +123,35 @@ No Kimi setup, model download, EmoNet prep, or Kimi smoke process was still runn
      --max-cpu-memory 96GiB
    ```
 
-2. If the larger smoke is stable, run the full `runs/emonet_smoke_requests.jsonl` file or build a manifest-sized request subset for calibration experiments.
-3. Add scoring/aggregation scripts only after enough raw Kimi outputs exist to validate the format.
+2. Run a larger all-at-once smoke to check whether the all-zero first response is isolated or systematic:
+
+   ```bash
+   cd /exp/exp4/acp21rjf/SLLM-understanding
+   . .venv-kimi/bin/activate
+   TMPDIR=$PWD/scratch/tmp \
+   TEMP=$PWD/scratch/tmp \
+   TMP=$PWD/scratch/tmp \
+   XDG_CACHE_HOME=$PWD/.cache \
+   PIP_CACHE_DIR=$PWD/.cache/pip \
+   HF_HOME=/store/store5/acp21rjf/hf-cache \
+   HUGGINGFACE_HUB_CACHE=/store/store5/acp21rjf/hf-cache/hub \
+   PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
+   CUDA_VISIBLE_DEVICES=0,1,2,3 \
+   python scripts/run_kimi_emonet_requests.py \
+     --model-path /store/store5/acp21rjf/models/Kimi-Audio-7B-Instruct \
+     --requests runs/emonet_smoke_all_at_once_requests.jsonl \
+     --output runs/kimi_smoke_all_at_once_raw_10.jsonl \
+     --limit 10 \
+     --overwrite \
+     --max-new-tokens 768 \
+     --device-map auto \
+     --max-primary-gpu-memory 10GiB \
+     --max-gpu-memory 18GiB \
+     --max-cpu-memory 96GiB
+   ```
+
+3. If the larger smokes are stable, run the full `runs/emonet_smoke_requests.jsonl` file or build a manifest-sized request subset for calibration experiments.
+4. Add scoring/aggregation scripts only after enough raw Kimi outputs exist to validate the format.
 
 ## Loader Notes
 

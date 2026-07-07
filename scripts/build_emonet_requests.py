@@ -3,8 +3,9 @@
 
 The default mode is one-by-one scoring: for each manifest row, emit one request
 per emotion using the prompt template configured in configs/emonet_eval.json.
-The resulting request file is model-agnostic and preserves enough metadata to
-store raw outputs before any calibration is applied.
+The all-at-once mode emits one request per audio asking for every emotion score
+in a strict JSON object. The resulting request files are model-agnostic and
+preserve enough metadata to store raw outputs before any calibration is applied.
 """
 
 from __future__ import annotations
@@ -76,7 +77,14 @@ def slug(value: str) -> str:
     return "-".join(value.lower().replace("/", "-").replace("&", "and").split())
 
 
-def build_requests(
+def score_scale(config: dict[str, Any]) -> dict[str, int]:
+    return {
+        "min": int(config["score_min"]),
+        "max": int(config["score_max"]),
+    }
+
+
+def build_one_by_one_requests(
     data_root: Path,
     rows: list[dict[str, Any]],
     emotions: list[str],
@@ -85,6 +93,7 @@ def build_requests(
     eval_config = load_json(EVAL_CONFIG_PATH)
     one_by_one = eval_config["one_by_one"]
     prompt_template = one_by_one["prompt_template"]
+    raw_score_scale = score_scale(one_by_one)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8") as handle:
@@ -99,14 +108,58 @@ def build_requests(
                     "target_label": row["target_label"],
                     "scored_emotion": emotion,
                     "prompt": prompt_template.format(emotion=emotion),
-                    "raw_score_scale": {
-                        "min": one_by_one["score_min"],
-                        "max": one_by_one["score_max"],
-                    },
+                    "raw_score_scale": raw_score_scale,
                     "human_mean_score_0_10": row.get("mean_score_0_10"),
                     "preserve_raw_scores": True,
                 }
                 handle.write(json.dumps(request, sort_keys=True) + "\n")
+
+
+def build_all_at_once_requests(
+    data_root: Path,
+    rows: list[dict[str, Any]],
+    emotions: list[str],
+    output_path: Path,
+) -> None:
+    eval_config = load_json(EVAL_CONFIG_PATH)
+    all_at_once = eval_config["all_at_once"]
+    prompt_template = all_at_once["prompt_template"]
+    raw_score_scale = score_scale(all_at_once)
+    emotion_lines = "\n".join(f"- {emotion}" for emotion in emotions)
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with output_path.open("w", encoding="utf-8") as handle:
+        for row in rows:
+            row_id = int(row["row_id"])
+            request = {
+                "request_id": f"row-{row_id:06d}__all-emotions",
+                "mode": "all_at_once",
+                "row_id": row_id,
+                "audio_path": audio_path(data_root, row),
+                "target_label": row["target_label"],
+                "scored_emotions": emotions,
+                "prompt": prompt_template.format(emotion_lines=emotion_lines),
+                "raw_score_scale": raw_score_scale,
+                "human_mean_score_0_10": row.get("mean_score_0_10"),
+                "preserve_raw_scores": True,
+            }
+            handle.write(json.dumps(request, sort_keys=True) + "\n")
+
+
+def build_requests(
+    mode: str,
+    data_root: Path,
+    rows: list[dict[str, Any]],
+    emotions: list[str],
+    output_path: Path,
+) -> None:
+    if mode == "one_by_one":
+        build_one_by_one_requests(data_root, rows, emotions, output_path)
+        return
+    if mode == "all_at_once":
+        build_all_at_once_requests(data_root, rows, emotions, output_path)
+        return
+    raise ValueError(f"unknown mode: {mode}")
 
 
 def main() -> int:
@@ -124,6 +177,12 @@ def main() -> int:
         default="official40",
         help="which emotions to score for each audio",
     )
+    parser.add_argument(
+        "--mode",
+        choices=["one_by_one", "all_at_once"],
+        default="one_by_one",
+        help="one request per audio/emotion pair or one request per audio for every emotion",
+    )
     parser.add_argument("--limit", type=int, help="limit manifest rows for smoke tests")
     args = parser.parse_args()
 
@@ -131,14 +190,15 @@ def main() -> int:
     rows = list(read_manifest(manifest_path(data_root, args.manifest), args.limit))
     emotions = emotion_list(rows, args.emotion_set)
     output_path = Path(args.output).expanduser().resolve()
-    build_requests(data_root, rows, emotions, output_path)
+    build_requests(args.mode, data_root, rows, emotions, output_path)
     print(f"wrote: {output_path}")
+    print(f"mode: {args.mode}")
     print(f"rows: {len(rows)}")
     print(f"emotions_per_row: {len(emotions)}")
-    print(f"requests: {len(rows) * len(emotions)}")
+    request_count = len(rows) * len(emotions) if args.mode == "one_by_one" else len(rows)
+    print(f"requests: {request_count}")
     return 0
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
