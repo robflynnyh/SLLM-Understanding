@@ -329,6 +329,14 @@ def main() -> int:
     parser.add_argument("--limit", type=int, help="limit requests for smoke tests")
     parser.add_argument("--overwrite", action="store_true", help="replace an existing output file")
     parser.add_argument("--max-new-tokens", type=int, default=16)
+    parser.add_argument("--audio-temperature", type=float, default=0.0)
+    parser.add_argument("--audio-top-k", type=int, default=1)
+    parser.add_argument("--text-temperature", type=float, default=0.0)
+    parser.add_argument("--text-top-k", type=int, default=1)
+    parser.add_argument("--audio-repetition-penalty", type=float, default=1.0)
+    parser.add_argument("--audio-repetition-window-size", type=int, default=64)
+    parser.add_argument("--text-repetition-penalty", type=float, default=1.0)
+    parser.add_argument("--text-repetition-window-size", type=int, default=16)
     parser.add_argument(
         "--device-map",
         help="optional transformers device_map for the main Kimi model, e.g. auto",
@@ -366,14 +374,14 @@ def main() -> int:
         max_cpu_memory=args.max_cpu_memory,
     )
     sampling_params = {
-        "audio_temperature": 0.0,
-        "audio_top_k": 1,
-        "text_temperature": 0.0,
-        "text_top_k": 1,
-        "audio_repetition_penalty": 1.0,
-        "audio_repetition_window_size": 64,
-        "text_repetition_penalty": 1.0,
-        "text_repetition_window_size": 16,
+        "audio_temperature": args.audio_temperature,
+        "audio_top_k": args.audio_top_k,
+        "text_temperature": args.text_temperature,
+        "text_top_k": args.text_top_k,
+        "audio_repetition_penalty": args.audio_repetition_penalty,
+        "audio_repetition_window_size": args.audio_repetition_window_size,
+        "text_repetition_penalty": args.text_repetition_penalty,
+        "text_repetition_window_size": args.text_repetition_window_size,
         "max_new_tokens": args.max_new_tokens,
     }
 
