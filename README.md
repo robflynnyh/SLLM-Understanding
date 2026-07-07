@@ -163,6 +163,17 @@ The required response format is:
 All-at-once runs need a larger generation cap than one-by-one runs; use
 `--max-new-tokens 768` or higher for the official 40-emotion prompt.
 
+Summarize prediction metrics on the paper's 0-10 error scale:
+
+```bash
+python scripts/summarize_emonet_predictions.py \
+  --predictions runs/moss_train100_target_human_rubric_raw.jsonl
+```
+
+This leaves Pearson and Spearman unchanged from the raw 0-2 scale, because
+positive linear rescaling does not change correlation. It only rescales MAE and
+RMSE from 0-2 units to 0-10 units.
+
 ## Kimi-Audio
 
 The first open audio-language model target is
