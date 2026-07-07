@@ -14,6 +14,9 @@ export HF_HOME
 export HUGGINGFACE_HUB_CACHE="${HUGGINGFACE_HUB_CACHE:-$HF_HOME/hub}"
 export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$ROOT_DIR/.cache}"
 export PIP_CACHE_DIR="${PIP_CACHE_DIR:-$ROOT_DIR/.cache/pip}"
+export TMPDIR="${TMPDIR:-$ROOT_DIR/scratch/tmp}"
+
+mkdir -p "$TMPDIR" "$PIP_CACHE_DIR" "$HUGGINGFACE_HUB_CACHE"
 
 uv venv --seed --python "$PYTHON_BIN" "$KIMI_VENV"
 # shellcheck disable=SC1091
