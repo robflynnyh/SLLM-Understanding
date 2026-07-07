@@ -316,7 +316,7 @@ def build_prediction(request: dict[str, Any], text: str) -> dict[str, Any]:
         "human_mean_score_0_10": request.get("human_mean_score_0_10"),
         "model": "moonshotai/Kimi-Audio-7B-Instruct",
     }
-    if mode in {"one_by_one", "one_by_one_human_rubric"}:
+    if mode in {"one_by_one", "one_by_one_paper_0_10", "one_by_one_human_rubric"}:
         parsed_score = parse_score(text, request["raw_score_scale"])
         prediction.update(
             {

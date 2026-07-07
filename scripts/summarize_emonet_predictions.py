@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Summarize EmoNet prediction JSONL metrics.
 
-By default, correlation metrics are computed on the raw 0-2 scale while MAE and
-RMSE are reported on the paper's 0-10 scale. Pearson and Spearman are unchanged
-by this positive linear rescaling, but error magnitudes are not.
+By default, MAE and RMSE are reported on the paper's 0-10 scale. The script
+accepts prediction files produced on either a raw 0-2 scale or the paper 0-10
+scale. Pearson and Spearman are unchanged by positive linear rescaling, but
+error magnitudes are not.
 """
 
 from __future__ import annotations
@@ -48,9 +49,11 @@ def load_manifest(path: Path) -> dict[int, dict[str, Any]]:
     manifest: dict[int, dict[str, Any]] = {}
     for row in read_jsonl(path):
         row_id = int(row["row_id"])
+        mean_raw = float(row["mean_score_raw_0_2"])
         manifest[row_id] = {
-            "mean": float(row["mean_score_raw_0_2"]),
-            "rounded_mean": int(round(float(row["mean_score_raw_0_2"]))),
+            "mean": mean_raw,
+            "mean_0_10": float(row.get("mean_score_0_10", mean_raw * 5.0)),
+            "rounded_mean": int(round(mean_raw)),
             "majority": majority_label(row),
         }
     return manifest
@@ -92,9 +95,30 @@ def spearman(xs: list[float], ys: list[float]) -> float:
     return pearson(ranks(xs), ranks(ys))
 
 
-def prediction_score(row: dict[str, Any], key: str | None) -> float | None:
+def score_suffix_for_row(row: dict[str, Any], key: str | None) -> str:
+    if key and key.endswith("_0_10"):
+        return "0_10"
+    if key and key.endswith("_0_2"):
+        return "0_2"
+    scale = row.get("raw_score_scale")
+    if isinstance(scale, dict):
+        try:
+            return f"{int(scale['min'])}_{int(scale['max'])}"
+        except (KeyError, TypeError, ValueError):
+            pass
+    if "raw_parsed_score_0_10" in row or "raw_parsed_emotion_score_0_10" in row:
+        return "0_10"
+    return "0_2"
+
+
+def prediction_score(row: dict[str, Any], key: str | None) -> tuple[float | None, str]:
+    suffix = score_suffix_for_row(row, key)
     if key:
         value = row.get(key)
+    elif "raw_parsed_score_0_10" in row:
+        value = row.get("raw_parsed_score_0_10")
+    elif "raw_parsed_emotion_score_0_10" in row:
+        value = row.get("raw_parsed_emotion_score_0_10")
     elif "raw_parsed_score_0_2" in row:
         value = row.get("raw_parsed_score_0_2")
     elif "raw_parsed_emotion_score_0_2" in row:
@@ -102,8 +126,8 @@ def prediction_score(row: dict[str, Any], key: str | None) -> float | None:
     else:
         value = row.get("raw_parsed_score")
     if value is None:
-        return None
-    return float(value)
+        return None, suffix
+    return float(value), suffix
 
 
 def fmt(value: float) -> str:
@@ -127,46 +151,79 @@ def main() -> int:
         default="paper_0_10",
         help="scale for MAE/RMSE reporting; correlations are unchanged by paper_0_10 scaling",
     )
+    parser.add_argument(
+        "--prediction-scale",
+        choices=["auto", "paper_0_10", "raw_0_2"],
+        default="auto",
+        help="scale used by parsed prediction scores; defaults to raw_score_scale metadata",
+    )
     args = parser.parse_args()
 
     predictions = read_jsonl(Path(args.predictions).expanduser().resolve())
     manifest = load_manifest(Path(args.manifest).expanduser().resolve())
 
-    valid_rows: list[tuple[dict[str, Any], float]] = []
+    valid_rows: list[tuple[dict[str, Any], float, str]] = []
     for row in predictions:
-        score = prediction_score(row, args.score_key)
+        score, inferred_suffix = prediction_score(row, args.score_key)
         if row.get("raw_parse_error") is None and score is not None:
-            valid_rows.append((row, score))
+            if args.prediction_scale == "paper_0_10":
+                suffix = "0_10"
+            elif args.prediction_scale == "raw_0_2":
+                suffix = "0_2"
+            else:
+                suffix = inferred_suffix
+            valid_rows.append((row, score, suffix))
 
     if not valid_rows:
         raise SystemExit("no valid parsed predictions found")
 
-    model_scores = [score for _, score in valid_rows]
-    human_means = [manifest[int(row["row_id"])]["mean"] for row, _ in valid_rows]
-    human_majorities = [manifest[int(row["row_id"])]["majority"] for row, _ in valid_rows]
-    human_rounded = [manifest[int(row["row_id"])]["rounded_mean"] for row, _ in valid_rows]
+    prediction_scales = sorted({suffix for _, _, suffix in valid_rows})
+    if len(prediction_scales) != 1:
+        raise SystemExit(f"mixed prediction scales are not supported: {prediction_scales}")
+    prediction_scale = prediction_scales[0]
 
-    scale_factor = 5.0 if args.error_scale == "paper_0_10" else 1.0
-    scaled_model_scores = [score * scale_factor for score in model_scores]
-    scaled_human_means = [score * scale_factor for score in human_means]
+    model_scores = [score for _, score, _ in valid_rows]
+    human_means = [manifest[int(row["row_id"])]["mean"] for row, _, _ in valid_rows]
+    human_means_0_10 = [manifest[int(row["row_id"])]["mean_0_10"] for row, _, _ in valid_rows]
+    human_majorities = [manifest[int(row["row_id"])]["majority"] for row, _, _ in valid_rows]
+    human_rounded = [manifest[int(row["row_id"])]["rounded_mean"] for row, _, _ in valid_rows]
 
-    mae = average([abs(model - human) for model, human in zip(scaled_model_scores, scaled_human_means)])
+    if prediction_scale == "0_10":
+        model_scores_0_10 = model_scores
+        model_scores_0_2 = [score / 5.0 for score in model_scores]
+        comparable_majorities = [score * 5.0 for score in human_majorities]
+        comparable_rounded = [score * 5.0 for score in human_rounded]
+    else:
+        model_scores_0_2 = model_scores
+        model_scores_0_10 = [score * 5.0 for score in model_scores]
+        comparable_majorities = [float(score) for score in human_majorities]
+        comparable_rounded = [float(score) for score in human_rounded]
+
+    if args.error_scale == "paper_0_10":
+        error_model_scores = model_scores_0_10
+        error_human_means = human_means_0_10
+    else:
+        error_model_scores = model_scores_0_2
+        error_human_means = human_means
+
+    mae = average([abs(model - human) for model, human in zip(error_model_scores, error_human_means)])
     rmse = math.sqrt(
-        average([(model - human) ** 2 for model, human in zip(scaled_model_scores, scaled_human_means)])
+        average([(model - human) ** 2 for model, human in zip(error_model_scores, error_human_means)])
     )
     acc_majority = average(
-        [float(model == human) for model, human in zip(model_scores, human_majorities)]
+        [float(model == human) for model, human in zip(model_scores, comparable_majorities)]
     )
-    acc_rounded = average([float(model == human) for model, human in zip(model_scores, human_rounded)])
+    acc_rounded = average([float(model == human) for model, human in zip(model_scores, comparable_rounded)])
 
     print(f"predictions: {Path(args.predictions)}")
     print(f"manifest: {Path(args.manifest)}")
     print(f"parsed: {len(valid_rows)}/{len(predictions)}")
+    print(f"prediction_scale: {prediction_scale}")
     print(f"error_scale: {args.error_scale}")
     print(f"accuracy_vs_majority: {acc_majority:.1%}")
     print(f"accuracy_vs_rounded_mean: {acc_rounded:.1%}")
-    print(f"pearson: {fmt(pearson(model_scores, human_means))}")
-    print(f"spearman: {fmt(spearman(model_scores, human_means))}")
+    print(f"pearson: {fmt(pearson(model_scores_0_10, human_means_0_10))}")
+    print(f"spearman: {fmt(spearman(model_scores_0_10, human_means_0_10))}")
     print(f"mae: {fmt(mae)}")
     print(f"rmse: {fmt(rmse)}")
     print(
