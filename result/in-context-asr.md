@@ -31,9 +31,20 @@ then the target is searched before and after that separator.
 
 ## Results
 
-| Parsed | Separators found | Correct in clear repeat | Correct in corrupt repeat | Correct without repeat |
-| ---: | ---: | ---: | ---: | ---: |
-| 40 / 40 | 18 / 20 | 90.000 | 80.000 | 45.000 |
+| Prompt mode | Parsed | Separators found | Correct in clear repeat | Correct in corrupt repeat | Correct without repeat |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Plain transcription | 40 / 40 | 18 / 20 | 90.000 | 80.000 | 45.000 |
+| All-segments transcription | 40 / 40 | 19 / 20 | 95.000 | 85.000 | 40.000 |
+
+All-segments prompt:
+
+```text
+Transcribe all speech in this audio from start to finish, including noisy, unclear, interrupted, repeated, or corrected segments. Return only the transcript.
+```
+
+The all-segments prompt improves the repeated-audio scores by one item: row 18
+now includes the noisy/repeat request and can be split correctly. It slightly
+hurts `sentence_without_repeat.wav`, adding one target miss.
 
 ## Notes
 
@@ -59,6 +70,31 @@ Corrupt-repeat miss breakdown:
 | 15 | `sourdough` | Corrupt first pass skipped. MOSS starts at the repeat-request phrase, then transcribes the clear repeat. | Before separator is only `sorry the`; target appears after the separator. |
 | 16 | `innate` | Near-word substitution in corrupt first pass. | Before separator has `inability`; target `innate` appears after the separator. |
 | 18 | `landmark` | Separator omitted. MOSS transcribed only the clean sentence, so the scorer could not split before versus after repeat. | Full transcript contains the target, but no `quite noisy` / `repeat that` separator. |
+
+All-segments corrupt-repeat miss breakdown:
+
+| Row | Target | Cause | Evidence |
+| ---: | --- | --- | --- |
+| 12 | `general purpose` | Separator omitted. MOSS still transcribed only the clean sentence, so the scorer could not split before versus after repeat. | Full transcript contains the target, but no `wrong with the line` / `repeat that` separator. |
+| 15 | `sourdough` | Corrupt first pass is transcribed, but the target is absent from that noisy segment. | Before separator is `you didn't see me getting a hand to the kitchen...`; target appears after the separator. |
+| 16 | `innate` | Near-word substitution in corrupt first pass. | Before separator has `inability`; target `innate` appears after the separator. |
+| 18 | `landmark` | Fixed relative to the plain prompt. | Transcript includes `quite noisy` and the target before the separator. |
+
+All-segments outputs for the changed/missed corrupt-repeat rows:
+
+```text
+row 12, with_repeat:
+One thing that should be learned from the bitter lesson is the great power of general purpose methods.
+
+row 15, with_repeat:
+You didn't see me getting a hand to the kitchen. You didn't see me to the kitchen. Sorry, the line is a bit funny. Could you repeat that? Sure thing. I think I'm finally getting the hang of sourdough baking. After like five failed attempts.
+
+row 16, with_repeat:
+His inability to diffuse tense situations makes him an excellent mediator. Sorry, the line is a bit funny. Could you repeat that? Sure thing. His innate ability to diffuse tense situations makes him an excellent mediator.
+
+row 18, with_repeat:
+This distinctive architecture of the building makes it a prominent landmark downtown. Oh dear, the line is quite noisy. Could you repeat that last sentence? Sure thing. I said that the distinctive architecture of the building makes it a prominent landmark downtown.
+```
 
 ## Output Samples
 
@@ -352,6 +388,9 @@ The raw run outputs are intentionally left under gitignored `runs/` paths:
 - `runs/in_context_asr_moss4b_transcription_requests.jsonl`
 - `runs/moss4b_in_context_asr_transcription_raw.jsonl`
 - `runs/moss4b_in_context_asr_transcription_summary.txt`
+- `runs/in_context_asr_moss4b_transcription_all_segments_requests.jsonl`
+- `runs/moss4b_in_context_asr_transcription_all_segments_raw.jsonl`
+- `runs/moss4b_in_context_asr_transcription_all_segments_summary.txt`
 
 Superseded target-aware diagnostic artifacts:
 

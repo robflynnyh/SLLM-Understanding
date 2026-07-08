@@ -329,6 +329,21 @@ The same prompt is used for every request:
 Transcribe the speech in this audio. Return only the transcript.
 ```
 
+An alternative prompt asks the model to preserve noisy and repeated segments:
+
+```bash
+python scripts/build_in_context_asr_requests.py \
+  --data-root ../in-context-asr/data \
+  --prompt-mode transcription_all_segments \
+  --output runs/in_context_asr_moss4b_transcription_all_segments_requests.jsonl
+```
+
+Prompt:
+
+```text
+Transcribe all speech in this audio from start to finish, including noisy, unclear, interrupted, repeated, or corrected segments. Return only the transcript.
+```
+
 Run MOSS 4B Instruct:
 
 ```bash
