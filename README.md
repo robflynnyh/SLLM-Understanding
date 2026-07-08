@@ -249,7 +249,8 @@ The summarizer reports utterance-level and system-level Pearson, Spearman, MAE,
 MSE, and RMSE on the 1-5 MOS scale.
 
 The completed MOSS 4B 1-10 quality-prompt results for the available main-track
-audio are recorded in `docs/voicemos2022_moss4b_results.md`.
+audio are recorded in `results.md`. Current EmoNet-Voice Bench results are
+recorded in `emonet_results.md`.
 
 ## Kimi-Audio
 
