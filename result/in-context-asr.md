@@ -10,8 +10,8 @@ This note records the corrected in-context-asr evaluation for
 - Items: 20
 - Requests: 40, one `sentence_without_repeat.wav` and one
   `sentence_with_repeat.wav` request per item
-- Model: `OpenMOSS-Team/MOSS-Audio-4B-Instruct`
-- Local model path: `/store/store5/acp21rjf/models/MOSS-Audio-4B-Instruct`
+- Baseline model: `OpenMOSS-Team/MOSS-Audio-4B-Instruct`
+- Baseline local model path: `/store/store5/acp21rjf/models/MOSS-Audio-4B-Instruct`
 - Generation: deterministic, `temperature=0`, `max_new_tokens=256`
 - Prompt mode: plain transcription
 
@@ -78,6 +78,34 @@ Now transcribe this audio from start to finish. Include noisy, unclear, interrup
 The audio-paired few-shot prompt is worse on the corrupt-repeat metric. It also
 copies the example transcript into four no-repeat outputs, so this specific
 few-shot setup appears to bias generation rather than help robust transcription.
+
+## Model Comparison
+
+These runs all use the all-segments prompt:
+
+```text
+Transcribe all speech in this audio from start to finish, including noisy, unclear, interrupted, repeated, or corrected segments. Return only the transcript.
+```
+
+| Model | Parsed | Separators found | Correct in clear repeat | Correct in corrupt repeat | Correct without repeat |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| MOSS-Audio-4B-Instruct | 40 / 40 | 19 / 20 | 95.000 | 85.000 | 40.000 |
+| MOSS-Audio-4B-Thinking | 40 / 40 | 19 / 20 | 95.000 | 85.000 | 35.000 |
+| MOSS-Audio-8B-Instruct | 40 / 40 | 18 / 20 | 90.000 | 85.000 | 45.000 |
+| MOSS-Audio-8B-Thinking | 40 / 40 | 20 / 20 | 100.000 | 95.000 | 45.000 |
+
+Notes:
+
+- `MOSS-Audio-8B-Thinking` is strongest on the repeated-audio conditions.
+- Thinking models emit `<think>...</think>` blocks before transcripts. Stripping
+  those blocks does not change the reported target-search metrics for the
+  Thinking runs.
+- `MOSS-Audio-8B-Instruct` did not fit on one 20GB A4500 with `device-map
+  cuda:0`; it ran with one visible GPU plus CPU offload.
+- A two-GPU `device-map auto` smoke for `MOSS-Audio-8B-Thinking` loaded, but
+  generation failed because MOSS audio embedding scatter hit a cross-device
+  tensor mismatch. The completed 8B Thinking run used one visible GPU plus CPU
+  offload.
 
 ## Notes
 
@@ -461,6 +489,12 @@ The raw run outputs are intentionally left under gitignored `runs/` paths:
 - `runs/in_context_asr_moss4b_transcription_all_segments_requests.jsonl`
 - `runs/moss4b_in_context_asr_transcription_all_segments_raw.jsonl`
 - `runs/moss4b_in_context_asr_transcription_all_segments_summary.txt`
+- `runs/moss4b_thinking_in_context_asr_transcription_all_segments_raw.jsonl`
+- `runs/moss4b_thinking_in_context_asr_transcription_all_segments_summary.txt`
+- `runs/moss8b_in_context_asr_transcription_all_segments_raw.jsonl`
+- `runs/moss8b_in_context_asr_transcription_all_segments_summary.txt`
+- `runs/moss8b_thinking_in_context_asr_transcription_all_segments_raw.jsonl`
+- `runs/moss8b_thinking_in_context_asr_transcription_all_segments_summary.txt`
 - `runs/in_context_asr_moss4b_transcription_text_fewshot_requests.jsonl`
 - `runs/moss4b_in_context_asr_transcription_text_fewshot_raw.jsonl`
 - `runs/moss4b_in_context_asr_transcription_text_fewshot_summary.txt`
