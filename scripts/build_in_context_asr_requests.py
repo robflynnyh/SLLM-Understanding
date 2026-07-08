@@ -20,6 +20,11 @@ def parse_text_info(path: Path) -> dict[str, Any]:
 def prompt_for(condition: str, targets: list[str], separators: list[str], prompt_mode: str) -> str:
     if prompt_mode == "transcription":
         return "Transcribe the speech in this audio. Return only the transcript."
+    if prompt_mode == "transcription_all_segments":
+        return (
+            "Transcribe all speech in this audio from start to finish, including noisy, unclear, "
+            "interrupted, repeated, or corrected segments. Return only the transcript."
+        )
 
     target_text = " | ".join(targets)
     if condition == "without_repeat":
@@ -98,9 +103,12 @@ def main() -> int:
     )
     parser.add_argument(
         "--prompt-mode",
-        choices=["transcription", "target_probe"],
+        choices=["transcription", "transcription_all_segments", "target_probe"],
         default="transcription",
-        help="transcription matches the original ASR task; target_probe is the earlier target-aware diagnostic",
+        help=(
+            "transcription matches the original ASR task; transcription_all_segments asks for noisy "
+            "and repeated segments explicitly; target_probe is the earlier target-aware diagnostic"
+        ),
     )
     args = parser.parse_args()
 
