@@ -25,6 +25,15 @@ def prompt_for(condition: str, targets: list[str], separators: list[str], prompt
             "Transcribe all speech in this audio from start to finish, including noisy, unclear, "
             "interrupted, repeated, or corrected segments. Return only the transcript."
         )
+    if prompt_mode == "transcription_fewshot":
+        return (
+            "Transcribe all speech in this audio from start to finish. Include noisy, unclear, "
+            "interrupted, repeated, or corrected segments.\n\n"
+            "Example output:\n"
+            "The meeting starts at nine in the morning. Sorry, the line cut out. Could you repeat "
+            "that? Sure thing. The meeting starts at nine in the morning.\n\n"
+            "Now transcribe the audio. Return only the transcript."
+        )
 
     target_text = " | ".join(targets)
     if condition == "without_repeat":
@@ -103,11 +112,12 @@ def main() -> int:
     )
     parser.add_argument(
         "--prompt-mode",
-        choices=["transcription", "transcription_all_segments", "target_probe"],
+        choices=["transcription", "transcription_all_segments", "transcription_fewshot", "target_probe"],
         default="transcription",
         help=(
             "transcription matches the original ASR task; transcription_all_segments asks for noisy "
-            "and repeated segments explicitly; target_probe is the earlier target-aware diagnostic"
+            "and repeated segments explicitly; transcription_fewshot adds one text-only example; "
+            "target_probe is the earlier target-aware diagnostic"
         ),
     )
     args = parser.parse_args()
