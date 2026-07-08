@@ -1,0 +1,9 @@
+{
+  "dataset_id": "somos",
+  "zenodo_record": "7378801",
+  "default_data_root": "/store/store5/acp21rjf/data/somos",
+  "raw_dir": "raw",
+  "manifest_dir": "manifests",
+  "split_variants": ["clean", "full"],
+  "splits": ["train", "valid", "test"]
+}

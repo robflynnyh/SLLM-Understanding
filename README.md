@@ -252,6 +252,59 @@ The completed MOSS 4B 1-10 quality-prompt results for the available main-track
 audio are recorded in `result/voicemos2022.md`. Current EmoNet-Voice Bench
 results are recorded in `result/emonet.md`.
 
+## SOMOS
+
+SOMOS is supported as a MOS-style naturalness benchmark for neural TTS samples.
+The default data root is:
+
+```bash
+/store/store5/acp21rjf/data/somos
+```
+
+Download, extract, and prepare manifests:
+
+```bash
+python scripts/prepare_somos.py all
+```
+
+The Zenodo release is a single outer ZIP containing metadata plus a nested
+`audios.zip`. For a metadata-only setup, run:
+
+```bash
+python scripts/prepare_somos.py all --metadata-only
+```
+
+The preparation step writes both `clean_*` and `full_*` manifests. The default
+request split is `clean_test`, which uses the filtered listener-quality scores.
+
+Build a small clean-test smoke request file with the same 1-10 quality prompt
+used for VoiceMOS:
+
+```bash
+python scripts/build_somos_requests.py \
+  --split clean_test \
+  --output runs/somos_clean_test_smoke_requests.jsonl \
+  --limit 10
+```
+
+Build all clean-test requests:
+
+```bash
+python scripts/build_somos_requests.py \
+  --split clean_test \
+  --output runs/somos_clean_test_quality_1_10_requests.jsonl
+```
+
+Summarize SOMOS predictions:
+
+```bash
+python scripts/summarize_somos_predictions.py \
+  --predictions runs/moss4b_somos_clean_test_quality_1_10_raw.jsonl \
+  --manifest /store/store5/acp21rjf/data/somos/manifests/clean_test.jsonl
+```
+
+The planned SOMOS setup and pending results are recorded in `result/somos.md`.
+
 ## Kimi-Audio
 
 The first open audio-language model target is

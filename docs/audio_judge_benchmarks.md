@@ -33,6 +33,7 @@ local checkout.
 | [IEMOCAP](https://sail.usc.edu/iemocap/) | Classic acted emotional dialogue baseline. Useful, but less naturalistic than MSP-Podcast. | 5 dyadic sessions; common evaluation is leave-one-session-out rather than a fixed official train/test split. | ~12 h. | GB not reported on official page; full audiovisual package includes video, speech, mocap, and transcripts. |
 | [CREMA-D](https://github.com/CheyneyComputerScience/CREMA-D) | Controlled acted emotion and intensity clips from many speakers. Good for sanity checks. | 7,442 clips from 91 actors; no official train/dev/test split. | Not reported. | Full original repo checkout is large because of media/LFS; an [audio-only HF mirror](https://huggingface.co/datasets/myleslinder/crema-d) is 471 MB. |
 | [MELD](https://affective-meld.github.io/) | Conversational emotion with audio, video, and text. Useful when dialogue context matters. | Train/dev/test = 9,989/1,109/2,610 utterances, 13,708 utterances total across 1,433 dialogues. | Not reported. | GB not reported on public page. |
+| [In-Context ASR](https://github.com/robflynnyh/in-context-asr) | Tiny ASR context-adaptation probe: compare recognition with and without preceding context/repetition. Useful as an SLLM listening-control task rather than a subjective judge benchmark. | 20 example directories, each with paired `sentence_with_repeat.wav` and `sentence_without_repeat.wav` plus text and attribution files. | Not reported. | GitHub repo data blobs are about 20 MB. |
 | [Mandarin Speech Prosody Benchmark](https://www.microsoft.com/en-us/research/publication/can-ai-understand-mandarin-speech-prosody-a-framework-and-benchmark-showcase/) | Prosody understanding in Mandarin across linguistically grounded tasks. Useful for non-English prosody, but language-specific. | 8 prosody-understanding tasks; no public train/test counts found. | Not reported. | GB not reported on public page/paper. |
 
 ## Suggested Evaluation Axes
@@ -76,6 +77,7 @@ For this repo, a pragmatic initial stack would be:
 5. SpeechRole-Eval or VoiceAssistant-Eval for conversational-agent style and naturalness.
 6. NISQA for acoustic-quality confound control.
 7. EmphAssess for targeted prosody and emphasis testing.
+8. In-Context ASR as a small listening/control probe for context use in ASR.
 
 The main caution is to avoid using only an emotion classifier benchmark. A
 conversational-agent judge needs to separate acoustic quality, naturalness,
