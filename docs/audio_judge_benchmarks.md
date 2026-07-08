@@ -16,6 +16,7 @@ local checkout.
 | --- | --- | --- | --- | --- | --- |
 | [VoiceMOS Challenge](https://sites.google.com/view/voicemos-challenge/voicemos-challenge-2026) | MOS prediction for speech naturalness; the 2026 challenge includes emotion similarity, perceived emotion, and optional valence, arousal, and dominance ratings. | Varies by challenge year. The 2022/BVCC release has main train/dev/test = 4,974/1,066/1,066 samples plus OOD labeled/unlabeled/dev/test = 136/540/136/540 samples. | Not reported. | 2022 Zenodo seed package is 286.9 MB; full recreation may be larger because Blizzard samples are not redistributed. | Closest match to "predict human perceptual ratings from speech." Useful for calibrating a judge against MOS-style human scores. |
 | [SOMOS](https://innoetics.github.io/publications/somos-dataset/index.html) | Naturalness MOS for neural TTS samples. | 20,000 synthetic utterances plus 100 natural utterances; official train/validation/test split is 70%/15%/15%. | Not reported. | [Zenodo archive](https://zenodo.org/records/7378801) is 4.0 GB. | Clean naturalness benchmark for synthetic speech. Good first sanity check for whether an SLLM can reproduce human naturalness judgments. |
+| [SpeechJudge](https://github.com/AmphionTeam/SpeechJudge) | Pairwise human preference judgment for synthesized speech naturalness, with intelligibility annotations and a dedicated SpeechJudge-Eval benchmark. | Gated HF dataset has train/dev/test/other splits. Paper reports 99K raw speech pairs, 79K binary preference pairs, 44K high-quality pairs, dev = 1,000 pairs, test/SpeechJudge-Eval = 1,000 pairs, and train = ~42K pairs. | Not reported. | [HF artifact](https://huggingface.co/datasets/RMSnow/SpeechJudge-Data) is 211 GB. | Very direct fit for SLLM-as-judge evaluation: the task is to listen to two generated audios and choose which is more natural, with human preference as ground truth. |
 | [BVCC / VoiceMOS 2022 data](https://zenodo.org/records/6572573) | MOS ratings for Blizzard Challenge, Voice Conversion Challenge, and ESPnet-TTS samples. | Main train/dev/test = 4,974/1,066/1,066 samples; OOD labeled/unlabeled/dev/test = 136/540/136/540 samples. | Not reported. | 286.9 MB seed package; full recreation may be larger because Blizzard samples are not redistributed. | More diverse than SOMOS; useful for robustness across TTS and voice conversion systems. |
 | [NISQA](https://github.com/gabrielmittag/NISQA) | Overall speech quality plus noisiness, coloration, discontinuity, and loudness. | 14,672 files total: TRAIN_SIM 10,000; VAL_SIM 2,500; TRAIN_LIVE 1,020; VAL_LIVE 200; TEST_LIVETALK 232; TEST_FOR 240; TEST_NSC 240; TEST_P501 240. | Official total hours not reported; using the published 6-12s segment range gives ~24.5-48.9 h. | [DepositOnce ZIP](https://depositonce.tu-berlin.de/items/b8908103-b0e8-4912-8144-aea65098fa1f) is 8.89 GB. | Useful control benchmark for separating acoustic degradation from higher-level style, prosody, or emotion issues. |
 | [MSP-Podcast SER Benchmark](https://lab-msp.com/MSP-Podcast_Competition/SERB/) | Naturalistic speech emotion recognition with categorical emotions and continuous affective attributes. | Version 2.0: train/dev/test1/test2/test3 = 169,190/34,399/46,294/14,822/3,200 speaking turns. | 409 h total. | GB not reported on public page; academic-license download. | Strong naturalistic affect benchmark for judging emotion, valence, arousal, and dominance in conversational speech. |
@@ -69,11 +70,12 @@ For categorical or preference data:
 For this repo, a pragmatic initial stack would be:
 
 1. VoiceMOS / BVCC / SOMOS for naturalness and MOS calibration.
-2. MSP-Podcast or EmoNet for affective perception.
-3. ADU-Bench for prosody-dependent meaning.
-4. SpeechRole-Eval or VoiceAssistant-Eval for conversational-agent style and naturalness.
-5. NISQA for acoustic-quality confound control.
-6. EmphAssess for targeted prosody and emphasis testing.
+2. SpeechJudge for pairwise human-preference naturalness judgment.
+3. MSP-Podcast or EmoNet for affective perception.
+4. ADU-Bench for prosody-dependent meaning.
+5. SpeechRole-Eval or VoiceAssistant-Eval for conversational-agent style and naturalness.
+6. NISQA for acoustic-quality confound control.
+7. EmphAssess for targeted prosody and emphasis testing.
 
 The main caution is to avoid using only an emotion classifier benchmark. A
 conversational-agent judge needs to separate acoustic quality, naturalness,
