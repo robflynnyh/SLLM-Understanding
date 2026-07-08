@@ -42,18 +42,7 @@ leaked the target word and asked for target-presence booleans, so it was not a
 normal ASR evaluation.
 
 MOSS often transcribed the conversational repeat-request phrase even for
-`sentence_without_repeat.wav`, for example:
-
-```text
-in_context_asr__row-001__without_repeat:
-The professor's pedagogical approach mythologized critical thinking over rote memorization. I think the line broke up. Could you repeat that? Sure thing.
-
-in_context_asr__row-001__with_repeat:
-The professor's pedagogical approach emphasized critical thinking over rote memorization. I think the line broke up. Could you repeat that? Sure thing. The professor's pedagogical approach emphasized critical thinking over rote memorization.
-
-in_context_asr__row-002__without_repeat:
-His proclivity for collecting to a lucrative business venture. I think the line broke up. Could you repeat that? Sure thing.
-```
+`sentence_without_repeat.wav`; the samples below show this pattern.
 
 Miss pattern:
 
@@ -61,6 +50,291 @@ Miss pattern:
 - `with_repeat`: 2 / 20 separator misses
 - `with_repeat`: 4 / 20 before-repeat target misses after separator splitting
 - `with_repeat`: 2 / 20 after-repeat target misses after separator splitting
+
+## Output Samples
+
+The full raw JSONL is in `runs/moss4b_in_context_asr_transcription_raw.jsonl`.
+These are the paired model transcript outputs for each item.
+
+### Row 1: target `pedagogical`
+
+`without_repeat`:
+
+```text
+The professor's pedagogical approach mythologized critical thinking over rote memorization. I think the line broke up. Could you repeat that? Sure thing.
+```
+
+`with_repeat`:
+
+```text
+The professor's pedagogical approach emphasized critical thinking over rote memorization. I think the line broke up. Could you repeat that? Sure thing. The professor's pedagogical approach emphasized critical thinking over rote memorization.
+```
+
+### Row 2: target `antique`
+
+`without_repeat`:
+
+```text
+His proclivity for collecting to a lucrative business venture. I think the line broke up. Could you repeat that? Sure thing.
+```
+
+`with_repeat`:
+
+```text
+His proclivity for collecting antique watches turned into a lucrative business venture. I think the line broke up. Could you repeat that? Sure thing. His proclivity for collecting antique watches turned into a lucrative business venture.
+```
+
+### Row 3: target `quintessential`
+
+`without_repeat`:
+
+```text
+The experience includes watching leaves change color while sipping hot cider. I think the line broke up. Could you repeat that? Sure thing.
+```
+
+`with_repeat`:
+
+```text
+The quintessential autumn experience includes watching leaves change color while sipping hot cider. I think the line broke up. Could you repeat that? Sure thing. The quintessential autumn experience includes watching leaves change color while sipping hot cider.
+```
+
+### Row 4: target `renaissance`
+
+`without_repeat`:
+
+```text
+The confluence of art and technology created an unprecedented cultural phenomenon. I think the line broke up. Could you repeat that? Sure thing.
+```
+
+`with_repeat`:
+
+```text
+The confluence of art and technology created an unprecedented cultural renaissance. I think the line broke up. Could you repeat that? Sure thing. The confluence of art and technology created an unprecedented cultural renaissance.
+```
+
+### Row 5: target `finally`
+
+`without_repeat`:
+
+```text
+His propensity for procrastination finally caught up with him during finals week. Sorry, I didn't catch that. Could you say that again? Sure thing.
+```
+
+`with_repeat`:
+
+```text
+His propensity for procrastination finally caught up with him during finals week. Sorry, I didn't catch that. Could you say that again? Sure thing. His propensity for procrastination finally caught up with him during finals week.
+```
+
+### Row 6: target `respect`
+
+`without_repeat`:
+
+```text
+Her pragmatic approach to problem solving earned her respect among colleagues. Sorry, I didn't catch that. Could you say that again? Sure thing.
+```
+
+`with_repeat`:
+
+```text
+Her pragmatic approach to problem solving earned her respect among colleagues. Sorry, I didn't catch that. Could you say that again? Sure thing. Her pragmatic approach to problem solving earned her respect among colleagues.
+```
+
+### Row 7: target `vernacular`
+
+`without_repeat`:
+
+```text
+The vernacular architecture of the region reflected centuries of local tradition. Sorry, I didn't catch that. Could you say that again? Sure thing.
+```
+
+`with_repeat`:
+
+```text
+The vernacular architecture of the region reflected centuries of local tradition. Sorry, I didn't catch that. Could you say that again? Sure thing. The vernacular architecture of the region reflected centuries of local tradition.
+```
+
+### Row 8: target `therapist`
+
+`without_repeat`:
+
+```text
+Her perspicacious observations about human nature made her an excellent therapist. Sorry, I didn't catch that. Could you say that again? Sure thing.
+```
+
+`with_repeat`:
+
+```text
+Her perspicacious observations about human nature made her an excellent therapist. Sorry, I didn't catch that. Could you say that again? Sure thing. Her perspicacious observations about human nature made her an excellent therapist.
+```
+
+### Row 9: target `flamboyant`
+
+`without_repeat`:
+
+```text
+The Wambiant decorations transformed the ordinary room into a spectacular space. Sorry, I didn't catch that. Could you say that again? Sure thing.
+```
+
+`with_repeat`:
+
+```text
+The flamboyant decorations transformed the ordinary room into a spectacular space. Sorry, I didn't catch that. Could you say that again? Sure thing. The flamboyant decorations transformed the ordinary room into a spectacular space.
+```
+
+### Row 10: target `frost`
+
+`without_repeat`:
+
+```text
+The winter mornings were harsh, especially before sunrise when the frost was thickest. Sorry, I didn't catch that. Could you say that again? Sure thing.
+```
+
+`with_repeat`:
+
+```text
+The winter mornings were harsh, especially before sunrise when the frost was thickest. Sorry, I didn't catch that. Could you say that again? Sure thing. The winter mornings were harsh, especially before sunrise when the frost was thickest.
+```
+
+### Row 11: target `computation`
+
+`without_repeat`:
+
+```text
+The biggest lesson that can be read from seventy years of AI research is that general methods that leverage computation are ultimately the most effective and by a large margin. Sorry, I didn't catch that. Could you say that again? Sure thing.
+```
+
+`with_repeat`:
+
+```text
+The biggest lesson that can be read from seventy years of AI research is that general methods that leverage computation are ultimately the most effective and by a large margin. Sorry, I didn't catch that. Could you say that again? Sure thing. The biggest lesson that can be read from seventy years of AI research is that general methods that leverage computation are ultimately the most effective and by a large margin.
+```
+
+### Row 12: target `general purpose`
+
+`without_repeat`:
+
+```text
+One thing that I should mention is that I think there's something wrong with the line. Could you repeat that? Sure thing.
+```
+
+`with_repeat`:
+
+```text
+One thing that should be learned from the bitter lesson is the great power of general purpose methods.
+```
+
+### Row 13: target `guitar`
+
+`without_repeat`:
+
+```text
+I actually just started taking guitar lessons last month. It's quite harder than I expected. Sorry, the line is a bit funny. Could you repeat that? Sure thing.
+```
+
+`with_repeat`:
+
+```text
+I actually just started taking guitar lessons last month. It's quite harder than I expected. Sorry, the line is a bit funny. Could you repeat that? Sure thing. I was just mentioning how I started taking guitar lessons last month.
+```
+
+### Row 14: target `main street`
+
+`without_repeat`:
+
+```text
+Did you hear they're finally renovating the old theater on Main Street? Sorry, the line is a bit funny. Could you repeat that? Sure thing.
+```
+
+`with_repeat`:
+
+```text
+Did you hear they're finally renovating the old theater on Main Street? Sorry, the line is a bit funny. Could you repeat that? Sure thing. Did you hear they're finally renovating the old theater on Main Street?
+```
+
+### Row 15: target `sourdough`
+
+`without_repeat`:
+
+```text
+You didn't see me getting a hand to the face. You didn't see me getting a hand to the face. Sorry, the line is a bit funny. Could you repeat that? Sure thing.
+```
+
+`with_repeat`:
+
+```text
+Sorry, the line is a bit funny. Could you repeat that? Sure thing. I think I'm finally getting the hang of sourdough baking. After like five failed attempts.
+```
+
+### Row 16: target `innate`
+
+`without_repeat`:
+
+```text
+Is enabling to new situations, makes them actually. Sorry, the line is a bit funny. Could you repeat that? Sure thing.
+```
+
+`with_repeat`:
+
+```text
+His inability to diffuse tense situations makes him an excellent mediator. Sorry, the line is a bit funny. Could you repeat that? Sure thing. His innate ability to diffuse tense situations makes him an excellent mediator.
+```
+
+### Row 17: target `eloquent`
+
+`without_repeat`:
+
+```text
+So I can see that the bad location for the name moves everything here. Sorry, the line is a bit funny. Could you repeat that? Sure thing.
+```
+
+`with_repeat`:
+
+```text
+Her eloquent speech at the graduation ceremony moved everyone to tears. Sorry, the line is a bit funny. Could you repeat that? Sure thing. Her eloquent speech at the graduation ceremony moved everyone to tears.
+```
+
+### Row 18: target `landmark`
+
+`without_repeat`:
+
+```text
+This is the art exhibition. It is the only way to see it. Oh dear, the line is quite noisy. Could you repeat that last sentence? Sure thing.
+```
+
+`with_repeat`:
+
+```text
+The distinctive architecture of the building makes it a prominent landmark downtown.
+```
+
+### Row 19: target `profound`
+
+`without_repeat`:
+
+```text
+Have you shared this? Have an ounce of the lips until the final days. I don't know why I'm in a handish. Hey, I can't hear much. Can you turn that music down and repeat what you said?
+```
+
+`with_repeat`:
+
+```text
+Evolutionary processes have endowed us with a glimpse into the profound mechanisms underlying learning and adaptation. Hey, I can't hear much. Can you turn that music down and repeat what you said? Sure, no worries. I said that. Evolutionary processes have endowed us with a glimpse into the profound mechanisms underlying learning and adaptation.
+```
+
+### Row 20: target `ships`
+
+`without_repeat`:
+
+```text
+They lifted people off the ship. I don't know where they're going. Hey, I didn't get that last bit. Can you repeat it, John?
+```
+
+`with_repeat`:
+
+```text
+They lifted people up into the ships. I don't know where they're going. Hey, I didn't get that last bit. Can you repeat it, John? I said, they lifted people up into the ships with some kind of beam. I don't know where they're going.
+```
 
 ## Artifacts
 
