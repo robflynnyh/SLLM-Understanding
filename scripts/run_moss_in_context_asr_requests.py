@@ -84,7 +84,10 @@ def parse_prediction(text: str, condition: str) -> dict[str, Any]:
 
 def build_prediction(request: dict[str, Any], text: str, model_name: str) -> dict[str, Any]:
     condition = request["condition"]
-    parsed = parse_prediction(text, condition)
+    if request["mode"] == "in_context_asr_transcription":
+        parsed = {"transcript": text, "raw_parse_error": None}
+    else:
+        parsed = parse_prediction(text, condition)
     return {
         "request_id": request["request_id"],
         "dataset": request.get("dataset", "in-context-asr"),

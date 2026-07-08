@@ -17,7 +17,10 @@ def parse_text_info(path: Path) -> dict[str, Any]:
     return {"full_text": full_text, "targets": targets, "separators": separators}
 
 
-def prompt_for(condition: str, targets: list[str], separators: list[str]) -> str:
+def prompt_for(condition: str, targets: list[str], separators: list[str], prompt_mode: str) -> str:
+    if prompt_mode == "transcription":
+        return "Transcribe the speech in this audio. Return only the transcript."
+
     target_text = " | ".join(targets)
     if condition == "without_repeat":
         return (
@@ -43,7 +46,7 @@ def prompt_for(condition: str, targets: list[str], separators: list[str]) -> str
     )
 
 
-def build_requests(data_root: Path, output_path: Path) -> int:
+def build_requests(data_root: Path, output_path: Path, prompt_mode: str) -> int:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     item_dirs = sorted((path for path in data_root.iterdir() if path.is_dir()), key=lambda path: int(path.name))
     count = 0
@@ -58,7 +61,7 @@ def build_requests(data_root: Path, output_path: Path) -> int:
                 "targets": text_info["targets"],
                 "separators": text_info["separators"],
                 "target_label": text_info["targets"][0],
-                "mode": "in_context_asr_target_probe",
+                "mode": f"in_context_asr_{prompt_mode}",
             }
             for condition, filename in [
                 ("without_repeat", "sentence_without_repeat.wav"),
@@ -69,7 +72,12 @@ def build_requests(data_root: Path, output_path: Path) -> int:
                     "request_id": f"in_context_asr__row-{row_id:03d}__{condition}",
                     "condition": condition,
                     "audio_path": str((item_dir / filename).resolve()),
-                    "prompt": prompt_for(condition, text_info["targets"], text_info["separators"]),
+                    "prompt": prompt_for(
+                        condition,
+                        text_info["targets"],
+                        text_info["separators"],
+                        prompt_mode,
+                    ),
                 }
                 handle.write(json.dumps(request, sort_keys=True) + "\n")
                 count += 1
@@ -85,8 +93,14 @@ def main() -> int:
     )
     parser.add_argument(
         "--output",
-        default="runs/in_context_asr_moss4b_target_probe_requests.jsonl",
+        default="runs/in_context_asr_moss4b_transcription_requests.jsonl",
         help="output request JSONL path",
+    )
+    parser.add_argument(
+        "--prompt-mode",
+        choices=["transcription", "target_probe"],
+        default="transcription",
+        help="transcription matches the original ASR task; target_probe is the earlier target-aware diagnostic",
     )
     args = parser.parse_args()
 
@@ -94,7 +108,7 @@ def main() -> int:
     if not data_root.exists():
         raise SystemExit(f"data root does not exist: {data_root}")
     output_path = Path(args.output).expanduser().resolve()
-    count = build_requests(data_root, output_path)
+    count = build_requests(data_root, output_path, args.prompt_mode)
     print(f"wrote: {output_path}")
     print(f"data_root: {data_root}")
     print(f"requests: {count}")
