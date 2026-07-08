@@ -1,11 +1,14 @@
 # SLLM Understanding
 
-Reusable code for preparing and evaluating speech-language model experiments on
-EmoNet-Voice Bench.
+Reusable code for preparing and evaluating speech-language model experiments
+across audio-understanding and speech-judge benchmarks. The repo currently
+supports EmoNet-Voice Bench and VoiceMOS 2022, and is intended to grow to cover
+additional conversational-agent judge benchmarks.
 
 ## Storage
 
-Keep large datasets outside this repo. On this server the default dataset root is:
+Keep large datasets outside this repo. On this server the default EmoNet dataset
+root is:
 
 ```bash
 /store/store5/acp21rjf/data/emonet-voice-bench
