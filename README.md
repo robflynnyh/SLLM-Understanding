@@ -344,6 +344,24 @@ Prompt:
 Transcribe all speech in this audio from start to finish, including noisy, unclear, interrupted, repeated, or corrected segments. Return only the transcript.
 ```
 
+For an audio-paired one-shot prompt, first create the example WAV:
+
+```bash
+mkdir -p scratch/in_context_asr
+espeak-ng -w scratch/in_context_asr/fewshot_example.wav \
+  "The meeting starts at nine in the morning. Sorry, the line cut out. Could you repeat that? Sure thing. The meeting starts at nine in the morning."
+```
+
+Then build requests with the example audio paired to the example transcript:
+
+```bash
+python scripts/build_in_context_asr_requests.py \
+  --data-root ../in-context-asr/data \
+  --prompt-mode transcription_fewshot \
+  --fewshot-audio-path scratch/in_context_asr/fewshot_example.wav \
+  --output runs/in_context_asr_moss4b_transcription_fewshot_requests.jsonl
+```
+
 Run MOSS 4B Instruct:
 
 ```bash

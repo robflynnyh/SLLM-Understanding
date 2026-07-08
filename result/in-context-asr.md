@@ -35,6 +35,7 @@ then the target is searched before and after that separator.
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Plain transcription | 40 / 40 | 18 / 20 | 90.000 | 80.000 | 45.000 |
 | All-segments transcription | 40 / 40 | 19 / 20 | 95.000 | 85.000 | 40.000 |
+| Audio-paired few-shot transcription | 40 / 40 | 19 / 20 | 95.000 | 65.000 | 40.000 |
 
 All-segments prompt:
 
@@ -45,6 +46,22 @@ Transcribe all speech in this audio from start to finish, including noisy, uncle
 The all-segments prompt improves the repeated-audio scores by one item: row 18
 now includes the noisy/repeat request and can be split correctly. It slightly
 hurts `sentence_without_repeat.wav`, adding one target miss.
+
+Audio-paired few-shot prompt structure:
+
+```text
+Example audio:
+<audio>
+Example transcript:
+The meeting starts at nine in the morning. Sorry, the line cut out. Could you repeat that? Sure thing. The meeting starts at nine in the morning.
+
+Now transcribe this audio from start to finish. Include noisy, unclear, interrupted, repeated, or corrected segments. Return only the transcript.
+<audio>
+```
+
+The audio-paired few-shot prompt is worse on the corrupt-repeat metric. It also
+copies the example transcript into four no-repeat outputs, so this specific
+few-shot setup appears to bias generation rather than help robust transcription.
 
 ## Notes
 
@@ -94,6 +111,34 @@ His inability to diffuse tense situations makes him an excellent mediator. Sorry
 
 row 18, with_repeat:
 This distinctive architecture of the building makes it a prominent landmark downtown. Oh dear, the line is quite noisy. Could you repeat that last sentence? Sure thing. I said that the distinctive architecture of the building makes it a prominent landmark downtown.
+```
+
+Audio-paired few-shot corrupt-repeat miss breakdown:
+
+| Row | Target | Cause | Evidence |
+| ---: | --- | --- | --- |
+| 12 | `general purpose` | Separator/repeat structure omitted, so the source segment is ambiguous. | Full transcript contains the target, but no `wrong with the line` / `repeat that` separator. |
+| 15 | `sourdough` | Corrupt first pass skipped. | Transcript starts at `Sorry, the line is a bit funny...`; target appears after the separator. |
+| 16 | `innate` | Corrupt first pass skipped. | Transcript starts at `Sorry, the line is a bit funny...`; target appears after the separator. |
+| 17 | `eloquent` | Corrupt first pass skipped. | Transcript starts at `Sorry, the line is a bit funny...`; target appears after the separator. |
+| 18 | `landmark` | Corrupt first pass skipped. | Transcript starts at `Oh dear, the line is quite noisy...`; target appears after the separator. |
+| 19 | `profound` | Corrupt first pass skipped. | Transcript starts at `Hey, I can't hear much...`; target appears after the separator. |
+| 20 | `ships` | Corrupt first pass skipped. | Transcript starts at `Hey, I didn't get that last bit...`; target appears after the separator. |
+
+Audio-paired few-shot example-copy failures in `sentence_without_repeat.wav`:
+
+```text
+row 3:
+The meeting starts at nine in the morning. Sorry, the line cut out. Could you repeat that? Sure thing. The meeting starts at nine in the morning.
+
+row 15:
+The meeting starts at nine in the morning. Sorry, the line cut out. Could you repeat that? Sure thing. The meeting starts at nine in the morning. Sorry, the line is a bit funny. Could you repeat that? Sure thing.
+
+row 17:
+The meeting starts at nine in the morning. Sorry, the line cut out. Could you repeat that? Sure thing. The meeting starts at nine in the morning. Sorry, the line is a bit funny. Could you repeat that? Sure thing.
+
+row 18:
+Sure thing. The meeting starts at nine in the morning.
 ```
 
 ## Output Samples
@@ -391,6 +436,9 @@ The raw run outputs are intentionally left under gitignored `runs/` paths:
 - `runs/in_context_asr_moss4b_transcription_all_segments_requests.jsonl`
 - `runs/moss4b_in_context_asr_transcription_all_segments_raw.jsonl`
 - `runs/moss4b_in_context_asr_transcription_all_segments_summary.txt`
+- `runs/in_context_asr_moss4b_transcription_fewshot_requests.jsonl`
+- `runs/moss4b_in_context_asr_transcription_fewshot_raw.jsonl`
+- `runs/moss4b_in_context_asr_transcription_fewshot_summary.txt`
 
 Superseded target-aware diagnostic artifacts:
 
