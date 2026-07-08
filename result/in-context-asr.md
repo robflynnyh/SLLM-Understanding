@@ -66,16 +66,16 @@ Corrupt-repeat miss breakdown:
 
 | Row | Target | Cause | Evidence |
 | ---: | --- | --- | --- |
-| 12 | `general purpose` | Separator omitted. MOSS transcribed only the clean sentence, so the scorer could not split before versus after repeat. | Full transcript contains the target, but no `wrong with the line` / `repeat that` separator. |
+| 12 | `general purpose` | Separator/repeat structure omitted. MOSS emitted one target-containing sentence, so the scorer could not split before versus after repeat and the source segment is ambiguous. | Full transcript contains the target, but no `wrong with the line` / `repeat that` separator. |
 | 15 | `sourdough` | Corrupt first pass skipped. MOSS starts at the repeat-request phrase, then transcribes the clear repeat. | Before separator is only `sorry the`; target appears after the separator. |
 | 16 | `innate` | Near-word substitution in corrupt first pass. | Before separator has `inability`; target `innate` appears after the separator. |
-| 18 | `landmark` | Separator omitted. MOSS transcribed only the clean sentence, so the scorer could not split before versus after repeat. | Full transcript contains the target, but no `quite noisy` / `repeat that` separator. |
+| 18 | `landmark` | Separator/repeat structure omitted. MOSS emitted one target-containing sentence, so the scorer could not split before versus after repeat and the source segment is ambiguous. | Full transcript contains the target, but no `quite noisy` / `repeat that` separator. |
 
 All-segments corrupt-repeat miss breakdown:
 
 | Row | Target | Cause | Evidence |
 | ---: | --- | --- | --- |
-| 12 | `general purpose` | Separator omitted. MOSS still transcribed only the clean sentence, so the scorer could not split before versus after repeat. | Full transcript contains the target, but no `wrong with the line` / `repeat that` separator. |
+| 12 | `general purpose` | Separator/repeat structure omitted. MOSS still emitted one target-containing sentence, so the scorer could not split before versus after repeat and the source segment is ambiguous. | Full transcript contains the target, but no `wrong with the line` / `repeat that` separator. |
 | 15 | `sourdough` | Corrupt first pass is transcribed, but the target is absent from that noisy segment. | Before separator is `you didn't see me getting a hand to the kitchen...`; target appears after the separator. |
 | 16 | `innate` | Near-word substitution in corrupt first pass. | Before separator has `inability`; target `innate` appears after the separator. |
 | 18 | `landmark` | Fixed relative to the plain prompt. | Transcript includes `quite noisy` and the target before the separator. |
