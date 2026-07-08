@@ -245,6 +245,9 @@ python scripts/summarize_voicemos_predictions.py \
 The summarizer reports utterance-level and system-level Pearson, Spearman, MAE,
 MSE, and RMSE on the 1-5 MOS scale.
 
+The completed MOSS 4B 1-10 quality-prompt results for the available main-track
+audio are recorded in `docs/voicemos2022_moss4b_results.md`.
+
 ## Kimi-Audio
 
 The first open audio-language model target is
