@@ -307,20 +307,26 @@ The planned SOMOS setup and pending results are recorded in `result/somos.md`.
 
 ## In-Context ASR
 
-The in-context-asr probe is supported as a small target-word recognition test
-using the data from `robflynnyh/in-context-asr`. Clone the data repo alongside
-this repo:
+The in-context-asr probe is supported as a small transcription benchmark using
+the data from `robflynnyh/in-context-asr`. Clone the data repo alongside this
+repo:
 
 ```bash
 git clone https://github.com/robflynnyh/in-context-asr ../in-context-asr
 ```
 
-Build MOSS target-word requests:
+Build MOSS transcription requests:
 
 ```bash
 python scripts/build_in_context_asr_requests.py \
   --data-root ../in-context-asr/data \
-  --output runs/in_context_asr_moss4b_target_probe_requests.jsonl
+  --output runs/in_context_asr_moss4b_transcription_requests.jsonl
+```
+
+The same prompt is used for every request:
+
+```text
+Transcribe the speech in this audio. Return only the transcript.
 ```
 
 Run MOSS 4B Instruct:
@@ -338,10 +344,10 @@ CUDA_VISIBLE_DEVICES=0 \
 .venv-moss/bin/python -u scripts/run_moss_in_context_asr_requests.py \
   --model-path /store/store5/acp21rjf/models/MOSS-Audio-4B-Instruct \
   --model-name OpenMOSS-Team/MOSS-Audio-4B-Instruct \
-  --requests runs/in_context_asr_moss4b_target_probe_requests.jsonl \
-  --output runs/moss4b_in_context_asr_target_probe_raw.jsonl \
+  --requests runs/in_context_asr_moss4b_transcription_requests.jsonl \
+  --output runs/moss4b_in_context_asr_transcription_raw.jsonl \
   --overwrite \
-  --max-new-tokens 192 \
+  --max-new-tokens 256 \
   --device-map cuda:0
 ```
 
@@ -349,7 +355,7 @@ Summarize predictions:
 
 ```bash
 .venv-moss/bin/python scripts/summarize_in_context_asr_predictions.py \
-  --predictions runs/moss4b_in_context_asr_target_probe_raw.jsonl
+  --predictions runs/moss4b_in_context_asr_transcription_raw.jsonl
 ```
 
 Completed MOSS 4B results are recorded in `result/in-context-asr.md`.
