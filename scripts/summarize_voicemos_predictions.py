@@ -66,6 +66,8 @@ def load_manifest(path: Path) -> dict[int, dict[str, Any]]:
 
 
 def score_suffix_for_row(row: dict[str, Any], key: str | None) -> str:
+    if key and key.endswith("_1_10"):
+        return "1_10"
     if key and key.endswith("_1_5"):
         return "1_5"
     if key and key.endswith("_0_10"):
@@ -78,6 +80,8 @@ def score_suffix_for_row(row: dict[str, Any], key: str | None) -> str:
             pass
     if "raw_parsed_score_1_5" in row:
         return "1_5"
+    if "raw_parsed_score_1_10" in row:
+        return "1_10"
     if "raw_parsed_score_0_10" in row:
         return "0_10"
     return "1_5"
@@ -91,6 +95,8 @@ def prediction_score(row: dict[str, Any], key: str | None) -> tuple[float | None
         value = row.get("raw_parsed_score_1_5")
     elif "raw_parsed_score_0_10" in row:
         value = row.get("raw_parsed_score_0_10")
+    elif "raw_parsed_score_1_10" in row:
+        value = row.get("raw_parsed_score_1_10")
     else:
         value = row.get("raw_parsed_score")
     if value is None:
@@ -99,6 +105,8 @@ def prediction_score(row: dict[str, Any], key: str | None) -> tuple[float | None
 
 
 def to_mos_1_5(score: float, suffix: str) -> float:
+    if suffix == "1_10":
+        return 1.0 + ((score - 1.0) / 9.0) * 4.0
     if suffix == "0_10":
         return 1.0 + (score / 10.0) * 4.0
     return score

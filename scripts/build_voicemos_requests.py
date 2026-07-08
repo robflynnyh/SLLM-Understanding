@@ -101,7 +101,11 @@ def main() -> int:
         action="store_true",
         help="include rows without audio_path; runners will fail on these unless handled separately",
     )
-    parser.add_argument("--mode", choices=["mos_1_5"], default="mos_1_5")
+    parser.add_argument(
+        "--mode",
+        choices=["mos_1_5", "quality_1_10_no_rubric"],
+        default="mos_1_5",
+    )
     args = parser.parse_args()
 
     data_root = resolve_data_root(args.data_root)
