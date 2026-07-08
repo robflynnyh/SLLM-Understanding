@@ -9,6 +9,13 @@ from pathlib import Path
 from typing import Any
 
 
+FEWSHOT_TRANSCRIPT = (
+    "The meeting starts at nine in the morning. Sorry, the line cut out. Could you repeat "
+    "that? Sure thing. The meeting starts at nine in the morning."
+)
+AUDIO_SPAN = "<|audio_bos|><|AUDIO|><|audio_eos|>"
+
+
 def parse_text_info(path: Path) -> dict[str, Any]:
     lines = path.read_text(encoding="utf-8").splitlines()
     full_text = lines[0].split("full: ", 1)[1].strip()
@@ -27,12 +34,17 @@ def prompt_for(condition: str, targets: list[str], separators: list[str], prompt
         )
     if prompt_mode == "transcription_fewshot":
         return (
-            "Transcribe all speech in this audio from start to finish. Include noisy, unclear, "
-            "interrupted, repeated, or corrected segments.\n\n"
-            "Example output:\n"
-            "The meeting starts at nine in the morning. Sorry, the line cut out. Could you repeat "
-            "that? Sure thing. The meeting starts at nine in the morning.\n\n"
-            "Now transcribe the audio. Return only the transcript."
+            "<|im_start|>system\n"
+            "You are a helpful assistant.<|im_end|>\n"
+            "<|im_start|>user\n"
+            "Example audio:\n"
+            f"{AUDIO_SPAN}\n"
+            "Example transcript:\n"
+            f"{FEWSHOT_TRANSCRIPT}\n\n"
+            "Now transcribe this audio from start to finish. Include noisy, unclear, interrupted, "
+            "repeated, or corrected segments. Return only the transcript.\n"
+            f"{AUDIO_SPAN}<|im_end|>\n"
+            "<|im_start|>assistant\n"
         )
 
     target_text = " | ".join(targets)
@@ -60,7 +72,12 @@ def prompt_for(condition: str, targets: list[str], separators: list[str], prompt
     )
 
 
-def build_requests(data_root: Path, output_path: Path, prompt_mode: str) -> int:
+def build_requests(
+    data_root: Path,
+    output_path: Path,
+    prompt_mode: str,
+    fewshot_audio_path: Path | None,
+) -> int:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     item_dirs = sorted((path for path in data_root.iterdir() if path.is_dir()), key=lambda path: int(path.name))
     count = 0
@@ -93,6 +110,15 @@ def build_requests(data_root: Path, output_path: Path, prompt_mode: str) -> int:
                         prompt_mode,
                     ),
                 }
+                if prompt_mode == "transcription_fewshot":
+                    if fewshot_audio_path is None:
+                        raise ValueError("fewshot_audio_path is required for transcription_fewshot")
+                    request["fewshot_audio_path"] = str(fewshot_audio_path.resolve())
+                    request["fewshot_transcript"] = FEWSHOT_TRANSCRIPT
+                    request["audio_paths"] = [
+                        str(fewshot_audio_path.resolve()),
+                        request["audio_path"],
+                    ]
                 handle.write(json.dumps(request, sort_keys=True) + "\n")
                 count += 1
     return count
@@ -120,13 +146,21 @@ def main() -> int:
             "target_probe is the earlier target-aware diagnostic"
         ),
     )
+    parser.add_argument(
+        "--fewshot-audio-path",
+        default="scratch/in_context_asr/fewshot_example.wav",
+        help="example WAV used by transcription_fewshot",
+    )
     args = parser.parse_args()
 
     data_root = Path(args.data_root).expanduser().resolve()
     if not data_root.exists():
         raise SystemExit(f"data root does not exist: {data_root}")
+    fewshot_audio_path = Path(args.fewshot_audio_path).expanduser().resolve()
+    if args.prompt_mode == "transcription_fewshot" and not fewshot_audio_path.exists():
+        raise SystemExit(f"few-shot audio path does not exist: {fewshot_audio_path}")
     output_path = Path(args.output).expanduser().resolve()
-    count = build_requests(data_root, output_path, args.prompt_mode)
+    count = build_requests(data_root, output_path, args.prompt_mode, fewshot_audio_path)
     print(f"wrote: {output_path}")
     print(f"data_root: {data_root}")
     print(f"requests: {count}")

@@ -11,7 +11,6 @@ from typing import Any
 
 from run_moss_emonet_requests import (
     configure_hf_cache,
-    generate_text,
     infer_model_name,
     load_moss_audio,
     parse_json_object,
@@ -105,6 +104,53 @@ def build_prediction(request: dict[str, Any], text: str, model_name: str) -> dic
     }
 
 
+def generate_text(
+    model,
+    processor,
+    audio_paths: list[str],
+    prompt: str,
+    max_new_tokens: int,
+    temperature: float,
+    top_p: float,
+    top_k: int,
+) -> str:
+    import torch
+    from src.audio_io import load_audio
+
+    raw_audios = [
+        load_audio(audio_path, sample_rate=processor.config.mel_sr)
+        for audio_path in audio_paths
+    ]
+    inputs = processor(text=prompt, audios=raw_audios, return_tensors="pt")
+    inputs = inputs.to(model.device)
+    if inputs.get("audio_data") is not None:
+        inputs["audio_data"] = inputs["audio_data"].to(model.dtype)
+    inputs["audio_input_mask"] = inputs["input_ids"] == processor.audio_token_id
+
+    do_sample = temperature > 0
+    generation_kwargs: dict[str, Any] = {
+        "max_new_tokens": max_new_tokens,
+        "do_sample": do_sample,
+        "num_beams": 1,
+        "use_cache": True,
+    }
+    if do_sample:
+        generation_kwargs.update(
+            {
+                "temperature": temperature,
+                "top_p": top_p,
+                "top_k": top_k,
+            }
+        )
+    with torch.no_grad():
+        generated_ids = model.generate(
+            **inputs,
+            **generation_kwargs,
+        )
+    input_len = inputs["input_ids"].shape[1]
+    return processor.decode(generated_ids[0, input_len:], skip_special_tokens=True).strip()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model-path", required=True, help="local MOSS-Audio model path")
@@ -148,10 +194,11 @@ def main() -> int:
 
     with output_path.open("w", encoding="utf-8") as handle:
         for request in requests:
+            audio_paths = list(request.get("audio_paths") or [request["audio_path"]])
             text = generate_text(
                 model=model,
                 processor=processor,
-                audio_path=request["audio_path"],
+                audio_paths=audio_paths,
                 prompt=request["prompt"],
                 max_new_tokens=args.max_new_tokens,
                 temperature=args.temperature,
