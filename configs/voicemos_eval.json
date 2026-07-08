@@ -1,0 +1,12 @@
+{
+  "prediction_storage": {
+    "preserve_raw_scores": true,
+    "notes": "VoiceMOS scores are MOS-style naturalness/quality ratings. Preserve raw model outputs and parsed numeric scores before any calibration."
+  },
+  "mos_1_5": {
+    "prompt_template": "Rate the naturalness and overall quality of this synthesized speech on a 1-5 MOS scale.\n\nUse this scale:\n1 = very unnatural or very poor quality.\n2 = poor quality.\n3 = fair quality.\n4 = good quality.\n5 = completely natural or excellent quality.\n\nReturn only a single number from 1 to 5. Decimals are allowed.",
+    "score_min": 1,
+    "score_max": 5,
+    "description": "One model call per audio sample asking for a VoiceMOS-style 1-5 MOS naturalness/quality score."
+  }
+}

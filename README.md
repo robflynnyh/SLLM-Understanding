@@ -187,6 +187,64 @@ This leaves Pearson and Spearman unchanged from the raw 0-2 scale, because
 positive linear rescaling does not change correlation. It only rescales MAE and
 RMSE from 0-2 units to 0-10 units.
 
+## VoiceMOS 2022
+
+VoiceMOS 2022 / BVCC is supported as a MOS-style naturalness and quality
+benchmark. The default data root is:
+
+```bash
+/store/store5/acp21rjf/data/voicemos-2022
+```
+
+Download, extract, and prepare manifests:
+
+```bash
+python scripts/prepare_voicemos.py all
+```
+
+The public Zenodo archive does not redistribute Blizzard Challenge audio. Those
+rows stay in the manifests with `audio_path: null`, and request generation skips
+them by default. On this server, the public archive currently gives these
+usable-audio counts:
+
+- `main_train`: 2,254 / 4,974 rows
+- `main_dev`: 387 / 1,066 rows
+- `main_test`: 741 / 1,066 rows
+- OOD splits: 0 usable WAVs until the bundled Blizzard download/preprocess
+  scripts are run
+
+Build a small main-dev smoke request file:
+
+```bash
+python scripts/build_voicemos_requests.py \
+  --split main_dev \
+  --output runs/voicemos2022_main_dev_smoke_requests.jsonl \
+  --limit 10
+```
+
+Build all available main-dev requests:
+
+```bash
+python scripts/build_voicemos_requests.py \
+  --split main_dev \
+  --output runs/voicemos2022_main_dev_requests.jsonl
+```
+
+The request prompt asks for a single 1-5 MOS score. Existing MOSS/Kimi runners
+can consume these request files because they use the same `audio_path`, `prompt`,
+and `raw_score_scale` fields as the EmoNet requests.
+
+Summarize VoiceMOS predictions:
+
+```bash
+python scripts/summarize_voicemos_predictions.py \
+  --predictions runs/moss_voicemos2022_main_dev_raw.jsonl \
+  --manifest /store/store5/acp21rjf/data/voicemos-2022/manifests/main_dev.jsonl
+```
+
+The summarizer reports utterance-level and system-level Pearson, Spearman, MAE,
+MSE, and RMSE on the 1-5 MOS scale.
+
 ## Kimi-Audio
 
 The first open audio-language model target is
