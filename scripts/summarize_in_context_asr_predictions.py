@@ -5,9 +5,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from collections import Counter
 from pathlib import Path
 from typing import Any
+
+try:
+    from whisper.normalizers import EnglishTextNormalizer
+except ImportError:
+    EnglishTextNormalizer = None
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -28,6 +34,17 @@ def bool_value(row: dict[str, Any], key: str) -> bool | None:
     return value if isinstance(value, bool) else None
 
 
+def normalize_text(text: str) -> str:
+    if EnglishTextNormalizer is not None:
+        return EnglishTextNormalizer()(text)
+    return " ".join(re.sub(r"[^a-z0-9 ]+", " ", text.lower()).split())
+
+
+def transcript_hit(text: Any, targets: list[str]) -> bool:
+    normalized = normalize_text(str(text or ""))
+    return any(normalize_text(target) in normalized for target in targets)
+
+
 def fmt(value: float) -> str:
     return f"{value:.3f}"
 
@@ -45,6 +62,17 @@ def main() -> int:
     correct_without = sum(bool_value(row, "target_present") is True for row in without)
     correct_clear = sum(bool_value(row, "target_after_repeat") is True for row in with_repeat)
     correct_corrupt = sum(bool_value(row, "target_before_repeat") is True for row in with_repeat)
+    transcript_without = sum(
+        transcript_hit(row.get("transcript"), list(row.get("targets") or [])) for row in without
+    )
+    transcript_clear = sum(
+        transcript_hit(row.get("after_repeat_transcript"), list(row.get("targets") or []))
+        for row in with_repeat
+    )
+    transcript_corrupt = sum(
+        transcript_hit(row.get("before_repeat_transcript"), list(row.get("targets") or []))
+        for row in with_repeat
+    )
     parse_errors = sum(row.get("raw_parse_error") is not None for row in predictions)
 
     print(f"predictions: {len(predictions)}")
@@ -52,10 +80,28 @@ def main() -> int:
     print(f"without_repeat_requests: {len(without)}")
     print(f"with_repeat_requests: {len(with_repeat)}")
     print(f"parsed: {len(predictions) - parse_errors}/{len(predictions)}")
+    print("Boolean-field metrics:")
     print(f"Correct in clear repeat: {fmt(pct(correct_clear, len(with_repeat)))}")
     print(f"Correct in corrupt repeat: {fmt(pct(correct_corrupt, len(with_repeat)))}")
     print(f"Correct without repeat: {fmt(pct(correct_without, len(without)))}")
+    print("Transcript-search metrics:")
+    print(f"Correct in clear repeat: {fmt(pct(transcript_clear, len(with_repeat)))}")
+    print(f"Correct in corrupt repeat: {fmt(pct(transcript_corrupt, len(with_repeat)))}")
+    print(f"Correct without repeat: {fmt(pct(transcript_without, len(without)))}")
     print(f"raw_parse_errors: {parse_errors}")
+    mismatches = 0
+    for row in without:
+        mismatches += bool_value(row, "target_present") is not transcript_hit(
+            row.get("transcript"), list(row.get("targets") or [])
+        )
+    for row in with_repeat:
+        mismatches += bool_value(row, "target_before_repeat") is not transcript_hit(
+            row.get("before_repeat_transcript"), list(row.get("targets") or [])
+        )
+        mismatches += bool_value(row, "target_after_repeat") is not transcript_hit(
+            row.get("after_repeat_transcript"), list(row.get("targets") or [])
+        )
+    print(f"boolean_transcript_mismatches: {mismatches}")
     print(
         "without_repeat_target_present: "
         + ", ".join(f"{key}={value}" for key, value in sorted(Counter(row.get("target_present") for row in without).items(), key=lambda item: str(item[0])))
