@@ -51,6 +51,15 @@ Miss pattern:
 - `with_repeat`: 4 / 20 before-repeat target misses after separator splitting
 - `with_repeat`: 2 / 20 after-repeat target misses after separator splitting
 
+Corrupt-repeat miss breakdown:
+
+| Row | Target | Cause | Evidence |
+| ---: | --- | --- | --- |
+| 12 | `general purpose` | Separator omitted. MOSS transcribed only the clean sentence, so the scorer could not split before versus after repeat. | Full transcript contains the target, but no `wrong with the line` / `repeat that` separator. |
+| 15 | `sourdough` | Corrupt first pass skipped. MOSS starts at the repeat-request phrase, then transcribes the clear repeat. | Before separator is only `sorry the`; target appears after the separator. |
+| 16 | `innate` | Near-word substitution in corrupt first pass. | Before separator has `inability`; target `innate` appears after the separator. |
+| 18 | `landmark` | Separator omitted. MOSS transcribed only the clean sentence, so the scorer could not split before versus after repeat. | Full transcript contains the target, but no `quite noisy` / `repeat that` separator. |
+
 ## Output Samples
 
 The full raw JSONL is in `runs/moss4b_in_context_asr_transcription_raw.jsonl`.
