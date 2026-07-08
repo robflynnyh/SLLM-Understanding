@@ -35,6 +35,7 @@ then the target is searched before and after that separator.
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Plain transcription | 40 / 40 | 18 / 20 | 90.000 | 80.000 | 45.000 |
 | All-segments transcription | 40 / 40 | 19 / 20 | 95.000 | 85.000 | 40.000 |
+| Text-only few-shot transcription | 40 / 40 | 19 / 20 | 95.000 | 80.000 | 45.000 |
 | Audio-paired few-shot transcription | 40 / 40 | 19 / 20 | 95.000 | 65.000 | 40.000 |
 
 All-segments prompt:
@@ -46,6 +47,21 @@ Transcribe all speech in this audio from start to finish, including noisy, uncle
 The all-segments prompt improves the repeated-audio scores by one item: row 18
 now includes the noisy/repeat request and can be split correctly. It slightly
 hurts `sentence_without_repeat.wav`, adding one target miss.
+
+Text-only few-shot prompt structure:
+
+```text
+Transcribe all speech in this audio from start to finish. Include noisy, unclear, interrupted, repeated, or corrected segments.
+
+Example transcript:
+The meeting starts at nine in the morning. Sorry, the line cut out. Could you repeat that? Sure thing. The meeting starts at nine in the morning.
+
+Now transcribe the audio. Return only the transcript.
+```
+
+The text-only few-shot prompt improves clear-repeat and separator recovery over
+plain transcription, does not copy the example transcript, but does not improve
+the corrupt-repeat score.
 
 Audio-paired few-shot prompt structure:
 
@@ -112,6 +128,15 @@ His inability to diffuse tense situations makes him an excellent mediator. Sorry
 row 18, with_repeat:
 This distinctive architecture of the building makes it a prominent landmark downtown. Oh dear, the line is quite noisy. Could you repeat that last sentence? Sure thing. I said that the distinctive architecture of the building makes it a prominent landmark downtown.
 ```
+
+Text-only few-shot corrupt-repeat miss breakdown:
+
+| Row | Target | Cause | Evidence |
+| ---: | --- | --- | --- |
+| 12 | `general purpose` | Separator/repeat structure omitted, so the source segment is ambiguous. | Full transcript contains the target, but no `wrong with the line` / `repeat that` separator. |
+| 15 | `sourdough` | Corrupt first pass skipped. | Transcript starts at `Sorry, the line is a bit funny...`; target appears after the separator. |
+| 16 | `innate` | Near-word substitution in corrupt first pass. | Before separator has `inability`; target `innate` appears after the separator. |
+| 18 | `landmark` | Corrupt first pass skipped. | Transcript starts at `Oh dear, the line is quite noisy...`; target appears after the separator. |
 
 Audio-paired few-shot corrupt-repeat miss breakdown:
 
@@ -436,6 +461,9 @@ The raw run outputs are intentionally left under gitignored `runs/` paths:
 - `runs/in_context_asr_moss4b_transcription_all_segments_requests.jsonl`
 - `runs/moss4b_in_context_asr_transcription_all_segments_raw.jsonl`
 - `runs/moss4b_in_context_asr_transcription_all_segments_summary.txt`
+- `runs/in_context_asr_moss4b_transcription_text_fewshot_requests.jsonl`
+- `runs/moss4b_in_context_asr_transcription_text_fewshot_raw.jsonl`
+- `runs/moss4b_in_context_asr_transcription_text_fewshot_summary.txt`
 - `runs/in_context_asr_moss4b_transcription_fewshot_requests.jsonl`
 - `runs/moss4b_in_context_asr_transcription_fewshot_raw.jsonl`
 - `runs/moss4b_in_context_asr_transcription_fewshot_summary.txt`

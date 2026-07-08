@@ -344,6 +344,15 @@ Prompt:
 Transcribe all speech in this audio from start to finish, including noisy, unclear, interrupted, repeated, or corrected segments. Return only the transcript.
 ```
 
+For a text-only one-shot prompt, build:
+
+```bash
+python scripts/build_in_context_asr_requests.py \
+  --data-root ../in-context-asr/data \
+  --prompt-mode transcription_text_fewshot \
+  --output runs/in_context_asr_moss4b_transcription_text_fewshot_requests.jsonl
+```
+
 For an audio-paired one-shot prompt, first create the example WAV:
 
 ```bash
