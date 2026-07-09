@@ -114,6 +114,28 @@ def parse_json_object(text: str) -> dict[str, Any] | None:
     return None
 
 
+def parse_choice(text: str) -> str | None:
+    payload = parse_json_object(text)
+    if payload is not None:
+        for key in ("choice", "answer", "synthetic", "synthetic_audio"):
+            value = payload.get(key)
+            if isinstance(value, str):
+                parsed = parse_choice(value)
+                if parsed is not None:
+                    return parsed
+
+    stripped = text.strip().upper()
+    if stripped in {"A", "B"}:
+        return stripped
+    match = re.match(r"\s*([AB])(?:\b|[^A-Z])", stripped)
+    if match:
+        return match.group(1)
+    match = re.search(r"\b([AB])\b", stripped)
+    if match:
+        return match.group(1)
+    return None
+
+
 def parse_numeric_score(value: Any, score_scale: dict[str, Any]) -> float | None:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         return None
@@ -288,7 +310,8 @@ def build_prediction(request: dict[str, Any], text: str, model_name: str) -> dic
         "target_label": request["target_label"],
         "prompt": request["prompt"],
         "raw_response_text": text,
-        "raw_score_scale": request["raw_score_scale"],
+        "raw_score_scale": request.get("raw_score_scale"),
+        "raw_choice_set": request.get("raw_choice_set"),
         "human_mean_score_raw_0_2": request.get("human_mean_score_raw_0_2"),
         "human_mean_score_0_10": request.get("human_mean_score_0_10"),
         "model": model_name,
@@ -332,6 +355,24 @@ def build_prediction(request: dict[str, Any], text: str, model_name: str) -> dic
         )
         return prediction
 
+    if mode == "pairwise_real_vs_synthetic":
+        parsed_choice = parse_choice(text)
+        correct_choice = request["correct_choice"]
+        prediction.update(
+            {
+                "pair_id": request["pair_id"],
+                "prompt_mode": request.get("prompt_mode"),
+                "direction": request["direction"],
+                "audio_a_label": request["audio_a_label"],
+                "audio_b_label": request["audio_b_label"],
+                "correct_choice": correct_choice,
+                "raw_parsed_choice": parsed_choice,
+                "is_correct": None if parsed_choice is None else parsed_choice == correct_choice,
+                "raw_parse_error": None if parsed_choice is not None else "no A/B choice parsed",
+            }
+        )
+        return prediction
+
     if mode == "all_at_once":
         parsed = parse_all_at_once_scores(
             text,
@@ -358,7 +399,7 @@ def build_prediction(request: dict[str, Any], text: str, model_name: str) -> dic
 def generate_text(
     model,
     processor,
-    audio_path: str,
+    audio_paths: list[str],
     prompt: str,
     max_new_tokens: int,
     temperature: float,
@@ -374,8 +415,8 @@ def generate_text(
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(seed)
 
-    raw_audio = load_audio(audio_path, sample_rate=processor.config.mel_sr)
-    inputs = processor(text=prompt, audios=[raw_audio], return_tensors="pt")
+    raw_audios = [load_audio(audio_path, sample_rate=processor.config.mel_sr) for audio_path in audio_paths]
+    inputs = processor(text=prompt, audios=raw_audios, return_tensors="pt")
     inputs = inputs.to(model.device)
     if inputs.get("audio_data") is not None:
         inputs["audio_data"] = inputs["audio_data"].to(model.dtype)
@@ -453,8 +494,12 @@ def main() -> int:
 
     with output_path.open("w", encoding="utf-8") as handle:
         for request_index, request in enumerate(requests):
-            if not request.get("audio_path"):
-                raise ValueError(f"request has no audio_path: {request['request_id']}")
+            if request.get("audio_paths"):
+                audio_paths = list(request["audio_paths"])
+            elif request.get("audio_path"):
+                audio_paths = [request["audio_path"]]
+            else:
+                raise ValueError(f"request has no audio path(s): {request['request_id']}")
             for repeat_index in range(args.repeats):
                 generation_seed = None
                 if args.seed is not None:
@@ -462,7 +507,7 @@ def main() -> int:
                 text = generate_text(
                     model=model,
                     processor=processor,
-                    audio_path=request["audio_path"],
+                    audio_paths=audio_paths,
                     prompt=request["prompt"],
                     max_new_tokens=args.max_new_tokens,
                     temperature=args.temperature,

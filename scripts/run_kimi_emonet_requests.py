@@ -96,6 +96,28 @@ def parse_json_object(text: str) -> dict[str, Any] | None:
     return None
 
 
+def parse_choice(text: str) -> str | None:
+    payload = parse_json_object(text)
+    if payload is not None:
+        for key in ("choice", "answer", "synthetic", "synthetic_audio"):
+            value = payload.get(key)
+            if isinstance(value, str):
+                parsed = parse_choice(value)
+                if parsed is not None:
+                    return parsed
+
+    stripped = text.strip().upper()
+    if stripped in {"A", "B"}:
+        return stripped
+    match = re.match(r"\s*([AB])(?:\b|[^A-Z])", stripped)
+    if match:
+        return match.group(1)
+    match = re.search(r"\b([AB])\b", stripped)
+    if match:
+        return match.group(1)
+    return None
+
+
 def parse_numeric_score(value: Any, score_scale: dict[str, Any]) -> float | None:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         return None
@@ -311,7 +333,8 @@ def build_prediction(request: dict[str, Any], text: str) -> dict[str, Any]:
         "target_label": request["target_label"],
         "prompt": request["prompt"],
         "raw_response_text": text,
-        "raw_score_scale": request["raw_score_scale"],
+        "raw_score_scale": request.get("raw_score_scale"),
+        "raw_choice_set": request.get("raw_choice_set"),
         "human_mean_score_raw_0_2": request.get("human_mean_score_raw_0_2"),
         "human_mean_score_0_10": request.get("human_mean_score_0_10"),
         "model": "moonshotai/Kimi-Audio-7B-Instruct",
@@ -342,6 +365,24 @@ def build_prediction(request: dict[str, Any], text: str) -> dict[str, Any]:
                     "opposite_score"
                 ],
                 "raw_parse_error": parsed["parse_error"],
+            }
+        )
+        return prediction
+
+    if mode == "pairwise_real_vs_synthetic":
+        parsed_choice = parse_choice(text)
+        correct_choice = request["correct_choice"]
+        prediction.update(
+            {
+                "pair_id": request["pair_id"],
+                "prompt_mode": request.get("prompt_mode"),
+                "direction": request["direction"],
+                "audio_a_label": request["audio_a_label"],
+                "audio_b_label": request["audio_b_label"],
+                "correct_choice": correct_choice,
+                "raw_parsed_choice": parsed_choice,
+                "is_correct": None if parsed_choice is None else parsed_choice == correct_choice,
+                "raw_parse_error": None if parsed_choice is not None else "no A/B choice parsed",
             }
         )
         return prediction
@@ -439,10 +480,17 @@ def main() -> int:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8") as out:
         for request in requests:
-            messages = [
-                {"role": "user", "message_type": "text", "content": request["prompt"]},
-                {"role": "user", "message_type": "audio", "content": request["audio_path"]},
-            ]
+            if request.get("audio_paths"):
+                messages = [{"role": "user", "message_type": "text", "content": request["prompt"]}]
+                for audio_path in request["audio_paths"]:
+                    messages.append(
+                        {"role": "user", "message_type": "audio", "content": str(audio_path)}
+                    )
+            else:
+                messages = [
+                    {"role": "user", "message_type": "text", "content": request["prompt"]},
+                    {"role": "user", "message_type": "audio", "content": request["audio_path"]},
+                ]
             _, text = model.generate(messages, **sampling_params, output_type="text")
             prediction = build_prediction(request, text)
             out.write(json.dumps(prediction, sort_keys=True) + "\n")
