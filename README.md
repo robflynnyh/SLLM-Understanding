@@ -493,6 +493,15 @@ python scripts/build_tedlium_real_vs_synthetic_requests.py \
   --output runs/tedlium_rvs_dev_quality_1_10_voicemos_exact_requests.jsonl
 ```
 
+To ask directly for a real-vs-synthetic score, use:
+
+```bash
+python scripts/build_tedlium_real_vs_synthetic_requests.py \
+  --split dev \
+  --mode real_vs_synthetic_0_10 \
+  --output runs/tedlium_rvs_dev_real_vs_synthetic_0_10_requests.jsonl
+```
+
 Each request includes metadata labels for analysis, but the model prompt never
 tells the model whether the audio is real or synthetic.
 
