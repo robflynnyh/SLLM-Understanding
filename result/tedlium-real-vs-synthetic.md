@@ -23,6 +23,11 @@ in `manifests/skipped_{split}.jsonl`: 4 dev rows and 2 test rows.
 
 Generated data size at completion: 1.4G.
 
+The prepared dataset is backed up in plain Git, without Git LFS:
+
+- Repository: `https://github.com/robflynnyh/tedlium-real-vs-synthetic`
+- Commit: `92da3cb8a3404baa3a1826d8e0d36342baa72ee4`
+
 ## Generation Settings
 
 Full generation used MOSS-TTS-Realtime with per-row speaker-conditioning WAVs,
@@ -53,6 +58,57 @@ The successful full run was completed through resumed shards:
 The final test shard was launched through the store5 cooperative GPU scheduler
 with `GPU_POOL=all` via `moss-realtime-demo/scripts/run_batch_rollout.sh`.
 
+## Judge Evaluation Results
+
+All judge runs used deterministic decoding. Each request scores one audio clip;
+both real and synthetic rows are included in every split. Pair delta is
+`synthetic_score - real_score`.
+
+For quality prompts, negative pair delta means the model rates synthetic speech
+as lower quality than real speech. For real-vs-synthetic detector prompts,
+positive pair delta means the model rates synthetic speech as more synthetic
+because the scale is `0=real`, `10=synthetic`.
+
+### MOSS-Audio 4B Instruct
+
+Model: `OpenMOSS-Team/MOSS-Audio-4B-Instruct`
+
+| Split | Prompt mode | Parsed | Real mean | Synthetic mean | Pair delta mean | Synthetic lower | Equal | Synthetic higher |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| dev | `quality_1_10` | 1006 / 1006 | 6.738 | 7.143 | 0.406 | 49 | 264 | 190 |
+| test | `quality_1_10` | 2306 / 2306 | 6.484 | 6.774 | 0.289 | 157 | 586 | 410 |
+| dev | `quality_1_10_with_transcript` | 1006 / 1006 | 5.506 | 5.562 | 0.056 | 4 | 483 | 16 |
+| test | `quality_1_10_with_transcript` | 2306 / 2306 | 5.551 | 5.559 | 0.008 | 54 | 1064 | 35 |
+| dev | `real_vs_synthetic_0_10` | 1006 / 1006 | 4.970 | 4.980 | 0.010 | 7 | 488 | 8 |
+| test | `real_vs_synthetic_0_10` | 2306 / 2306 | 4.983 | 5.221 | 0.239 | 13 | 1070 | 70 |
+| dev | `real_vs_synthetic_0_10_with_transcript` | 1006 / 1006 | 4.980 | 4.938 | -0.042 | 6 | 496 | 1 |
+| test | `real_vs_synthetic_0_10_with_transcript` | 2306 / 2306 | 4.965 | 4.952 | -0.013 | 7 | 1139 | 7 |
+
+The MOSS direct detector prompts are mostly tied around 5 and do not provide a
+useful real/synthetic separation on this dataset.
+
+### Kimi-Audio 7B Instruct
+
+Model: `moonshotai/Kimi-Audio-7B-Instruct`
+
+| Split | Prompt mode | Parsed | Real mean | Synthetic mean | Pair delta mean | Synthetic lower | Equal | Synthetic higher |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| dev | `quality_1_10` | 992 / 1006 | 8.786 | 8.102 | -0.679 | 280 | 198 | 11 |
+| test | `quality_1_10` | 2259 / 2306 | 8.817 | 7.907 | -0.915 | 658 | 399 | 49 |
+| dev | `quality_1_10_voicemos_exact` | 1002 / 1006 | 8.715 | 7.970 | -0.745 | 303 | 186 | 10 |
+| test | `quality_1_10_voicemos_exact` | 2263 / 2306 | 8.746 | 7.717 | -1.042 | 716 | 366 | 28 |
+| dev | `quality_1_10_with_transcript` | 1005 / 1006 | 8.597 | 7.685 | -0.911 | 322 | 168 | 12 |
+| test | `quality_1_10_with_transcript` | 2279 / 2306 | 8.621 | 7.525 | -1.097 | 698 | 385 | 43 |
+| dev | `real_vs_synthetic_0_10` | 784 / 1006 | 4.314 | 6.055 | 1.586 | 55 | 65 | 182 |
+| test | `real_vs_synthetic_0_10` | 1819 / 2306 | 4.768 | 5.741 | 0.802 | 210 | 177 | 346 |
+| dev | `real_vs_synthetic_0_10_with_transcript` | 999 / 1006 | 4.636 | 5.930 | 1.305 | 84 | 135 | 277 |
+| test | `real_vs_synthetic_0_10_with_transcript` | 2266 / 2306 | 4.822 | 5.568 | 0.750 | 259 | 341 | 515 |
+
+The strongest Kimi quality prompt is `quality_1_10_with_transcript` by pair
+delta on both dev and test. The direct detector prompts also separate the
+classes, but `real_vs_synthetic_0_10` has many parse failures; adding the
+transcript greatly improves parse rate while reducing the separation magnitude.
+
 ## Smoke Hashes
 
 | Split | File | SHA256 |
@@ -75,3 +131,16 @@ with `GPU_POOL=all` via `moss-realtime-demo/scripts/run_batch_rollout.sh`.
 - `manifests/resume/*.jsonl`
 - `synthetic/moss-tts-realtime/dev/manifest.json`
 - `synthetic/moss-tts-realtime/test/manifest.json`
+
+Ignored run artifacts used for the judge results:
+
+- `runs/moss4b_tedlium_rvs_dev_quality_1_10_raw.jsonl`
+- `runs/moss4b_tedlium_rvs_test_quality_1_10_raw.jsonl`
+- `runs/moss4b_tedlium_rvs_dev_quality_1_10_with_transcript_raw.jsonl`
+- `runs/moss4b_tedlium_rvs_test_quality_1_10_with_transcript_raw.jsonl`
+- `runs/moss4b_tedlium_rvs_dev_real_vs_synthetic_0_10_raw.jsonl`
+- `runs/moss4b_tedlium_rvs_test_real_vs_synthetic_0_10_raw.jsonl`
+- `runs/moss4b_tedlium_rvs_dev_real_vs_synthetic_0_10_with_transcript_raw.jsonl`
+- `runs/moss4b_tedlium_rvs_test_real_vs_synthetic_0_10_with_transcript_raw.jsonl`
+- `runs/kimi_tedlium_rvs_dev_all_prompts_raw.jsonl`
+- `runs/kimi_tedlium_rvs_test_all_prompts_raw.jsonl`
