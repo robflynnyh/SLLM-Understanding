@@ -1,0 +1,18 @@
+{
+  "prediction_storage": {
+    "preserve_raw_scores": true,
+    "notes": "TED-LIUM real-vs-synthetic speech quality ratings. Preserve raw model outputs and parsed numeric scores before any calibration."
+  },
+  "quality_1_10": {
+    "prompt_template": "You are a trained assessor of speech quality. We are assessing the quality and naturalness of synthesized speech. Rate the quality and naturalness of this speech on a scale of 1-10. Return only a single number from 1 to 10. Decimals are allowed.",
+    "score_min": 1,
+    "score_max": 10,
+    "description": "One model call per real or synthetic audio sample asking for a direct 1-10 speech quality and naturalness score."
+  },
+  "quality_1_10_with_transcript": {
+    "prompt_template": "You are a trained assessor of speech quality. We are assessing the quality and naturalness of synthesized speech. The speech should contain the text: {transcript}. Rate the quality and naturalness of this speech on a scale of 1-10. Return only a single number from 1 to 10. Decimals are allowed.",
+    "score_min": 1,
+    "score_max": 10,
+    "description": "One model call per real or synthetic audio sample asking for a direct 1-10 quality score while exposing the expected transcript."
+  }
+}

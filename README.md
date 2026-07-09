@@ -466,6 +466,27 @@ Repeat with `moss_texts_test.jsonl` and the `test` output directory for the
 test split. Current smoke-generation status is recorded in
 `result/tedlium-real-vs-synthetic.md`.
 
+Build blind quality-judge requests for both real and synthetic audio:
+
+```bash
+python scripts/build_tedlium_real_vs_synthetic_requests.py \
+  --split dev \
+  --mode quality_1_10 \
+  --output runs/tedlium_rvs_dev_quality_1_10_requests.jsonl
+```
+
+The same builder supports a transcript-aware quality prompt:
+
+```bash
+python scripts/build_tedlium_real_vs_synthetic_requests.py \
+  --split dev \
+  --mode quality_1_10_with_transcript \
+  --output runs/tedlium_rvs_dev_quality_1_10_with_transcript_requests.jsonl
+```
+
+Each request includes metadata labels for analysis, but the model prompt never
+tells the model whether the audio is real or synthetic.
+
 ## Kimi-Audio
 
 The first open audio-language model target is
