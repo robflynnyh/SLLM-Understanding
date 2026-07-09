@@ -484,6 +484,15 @@ python scripts/build_tedlium_real_vs_synthetic_requests.py \
   --output runs/tedlium_rvs_dev_quality_1_10_with_transcript_requests.jsonl
 ```
 
+To use the exact VoiceMOS 1-10 no-rubric prompt, use:
+
+```bash
+python scripts/build_tedlium_real_vs_synthetic_requests.py \
+  --split dev \
+  --mode quality_1_10_voicemos_exact \
+  --output runs/tedlium_rvs_dev_quality_1_10_voicemos_exact_requests.jsonl
+```
+
 Each request includes metadata labels for analysis, but the model prompt never
 tells the model whether the audio is real or synthetic.
 

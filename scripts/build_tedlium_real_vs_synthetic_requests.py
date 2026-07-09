@@ -100,7 +100,11 @@ def main() -> int:
     parser.add_argument("--limit", type=int, help="limit emitted requests for smoke tests")
     parser.add_argument(
         "--mode",
-        choices=["quality_1_10", "quality_1_10_with_transcript"],
+        choices=[
+            "quality_1_10",
+            "quality_1_10_voicemos_exact",
+            "quality_1_10_with_transcript",
+        ],
         default="quality_1_10",
     )
     args = parser.parse_args()
