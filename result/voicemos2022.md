@@ -4,7 +4,7 @@ This note records the completed VoiceMOS 2022 main-track evaluation for
 `OpenMOSS-Team/MOSS-Audio-4B-Instruct` using the direct 1-10 quality prompt.
 
 The run used the public-archive audio currently available in
-`/store/store5/acp21rjf/data/voicemos-2022`. Blizzard Challenge rows whose audio
+`/store/store5/data/acp21rjf/data/voicemos-2022`. Blizzard Challenge rows whose audio
 is not redistributed by the public archive were skipped at request-generation
 time, so these are audio-available main split results rather than full
 challenge-set results.
@@ -12,7 +12,7 @@ challenge-set results.
 ## Setup
 
 - Model: `OpenMOSS-Team/MOSS-Audio-4B-Instruct`
-- Local model path: `/store/store5/acp21rjf/models/MOSS-Audio-4B-Instruct`
+- Local model path: `/store/store5/data/acp21rjf/models/MOSS-Audio-4B-Instruct`
 - Dataset: VoiceMOS 2022 / BVCC, main track
 - Prompt mode: `quality_1_10_no_rubric`
 - Raw model scale: 1-10
@@ -30,9 +30,9 @@ You are a trained assessor of speech quality. We are assessing the quality and n
 
 | Split | Manifest | Parsed predictions | Utterances | Systems |
 | --- | --- | ---: | ---: | ---: |
-| main_train | `/store/store5/acp21rjf/data/voicemos-2022/manifests/main_train.jsonl` | 2254 / 2254 | 2254 | 83 |
-| main_dev | `/store/store5/acp21rjf/data/voicemos-2022/manifests/main_dev.jsonl` | 387 / 387 | 387 | 86 |
-| main_test | `/store/store5/acp21rjf/data/voicemos-2022/manifests/main_test.jsonl` | 741 / 741 | 741 | 89 |
+| main_train | `/store/store5/data/acp21rjf/data/voicemos-2022/manifests/main_train.jsonl` | 2254 / 2254 | 2254 | 83 |
+| main_dev | `/store/store5/data/acp21rjf/data/voicemos-2022/manifests/main_dev.jsonl` | 387 / 387 | 387 | 86 |
+| main_test | `/store/store5/data/acp21rjf/data/voicemos-2022/manifests/main_test.jsonl` | 741 / 741 | 741 | 89 |
 
 ## Results
 

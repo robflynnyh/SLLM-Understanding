@@ -1,7 +1,7 @@
 {
   "model_id": "OpenMOSS-Team/MOSS-Audio-4B-Instruct",
-  "default_model_root": "/store/store5/acp21rjf/models/MOSS-Audio-4B-Instruct",
-  "default_hf_home": "/store/store5/acp21rjf/hf-cache",
+  "default_model_root": "/store/store5/data/acp21rjf/models/MOSS-Audio-4B-Instruct",
+  "default_hf_home": "/store/store5/data/acp21rjf/hf-cache",
   "source_repo": "https://github.com/OpenMOSS/MOSS-Audio.git",
   "source_commit": "5cbb1d823937cd5b5de3d8fa4d3a7253ebd3b883",
   "notes": [

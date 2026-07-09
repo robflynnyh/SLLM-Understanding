@@ -1,6 +1,6 @@
 {
   "dataset_id": "t1a5anu-anon/emonet-voice-bench",
-  "default_data_root": "/store/store5/acp21rjf/data/emonet-voice-bench",
+  "default_data_root": "/store/store5/data/acp21rjf/data/emonet-voice-bench",
   "split": "train",
   "raw_dir": "raw",
   "audio_dir": "audio",

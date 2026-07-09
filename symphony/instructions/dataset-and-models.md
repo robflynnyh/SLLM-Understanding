@@ -3,13 +3,13 @@
 Canonical EmoNet-Voice Bench dataset root:
 
 ```text
-/store/store5/acp21rjf/data/emonet-voice-bench
+/store/store5/data/acp21rjf/data/emonet-voice-bench
 ```
 
 Canonical manifest:
 
 ```text
-/store/store5/acp21rjf/data/emonet-voice-bench/manifests/train.jsonl
+/store/store5/data/acp21rjf/data/emonet-voice-bench/manifests/train.jsonl
 ```
 
 Treat this dataset root as read-only. Do not edit, move, delete, or overwrite
@@ -52,8 +52,8 @@ Build target-only paper-scale requests:
 
 ```bash
 python scripts/build_emonet_requests.py \
-  --data-root /store/store5/acp21rjf/data/emonet-voice-bench \
-  --manifest /store/store5/acp21rjf/data/emonet-voice-bench/manifests/train.jsonl \
+  --data-root /store/store5/data/acp21rjf/data/emonet-voice-bench \
+  --manifest /store/store5/data/acp21rjf/data/emonet-voice-bench/manifests/train.jsonl \
   --output runs/emonet_target_paper_0_10_requests.jsonl \
   --mode one_by_one_paper_0_10 \
   --emotion-set target
@@ -69,12 +69,12 @@ TEMP=$PWD/scratch/tmp \
 TMP=$PWD/scratch/tmp \
 XDG_CACHE_HOME=$PWD/.cache \
 PIP_CACHE_DIR=$PWD/.cache/pip \
-HF_HOME=/store/store5/acp21rjf/hf-cache \
-HUGGINGFACE_HUB_CACHE=/store/store5/acp21rjf/hf-cache/hub \
+HF_HOME=/store/store5/data/acp21rjf/hf-cache \
+HUGGINGFACE_HUB_CACHE=/store/store5/data/acp21rjf/hf-cache/hub \
 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
 CUDA_VISIBLE_DEVICES=0 \
 python scripts/run_moss_emonet_requests.py \
-  --model-path /store/store5/acp21rjf/models/MOSS-Audio-4B-Instruct \
+  --model-path /store/store5/data/acp21rjf/models/MOSS-Audio-4B-Instruct \
   --requests runs/emonet_target_paper_0_10_requests.jsonl \
   --output runs/moss_target_paper_0_10_raw.jsonl \
   --overwrite \
@@ -91,14 +91,14 @@ python scripts/summarize_emonet_predictions.py \
 Known local model roots:
 
 ```text
-/store/store5/acp21rjf/models/MOSS-Audio-4B-Instruct
-/store/store5/acp21rjf/models/Kimi-Audio-7B-Instruct
+/store/store5/data/acp21rjf/models/MOSS-Audio-4B-Instruct
+/store/store5/data/acp21rjf/models/Kimi-Audio-7B-Instruct
 ```
 
 Known local cache roots:
 
 ```text
-/store/store5/acp21rjf/hf-cache
+/store/store5/data/acp21rjf/hf-cache
 ```
 
 MOSS environment:

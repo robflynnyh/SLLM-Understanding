@@ -11,7 +11,7 @@ This note records the corrected in-context-asr evaluation for
 - Requests: 40, one `sentence_without_repeat.wav` and one
   `sentence_with_repeat.wav` request per item
 - Baseline model: `OpenMOSS-Team/MOSS-Audio-4B-Instruct`
-- Baseline local model path: `/store/store5/acp21rjf/models/MOSS-Audio-4B-Instruct`
+- Baseline local model path: `/store/store5/data/acp21rjf/models/MOSS-Audio-4B-Instruct`
 - Generation: deterministic, `temperature=0`, `max_new_tokens=256`
 - Prompt mode: plain transcription
 

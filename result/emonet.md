@@ -11,7 +11,7 @@ linear rescaling.
 ## Setup
 
 - Dataset: EmoNet-Voice Bench
-- Manifest: `/store/store5/acp21rjf/data/emonet-voice-bench/manifests/train.jsonl`
+- Manifest: `/store/store5/data/acp21rjf/data/emonet-voice-bench/manifests/train.jsonl`
 - Task: score only each row's target emotion
 - Primary metrics: accuracy versus majority human score, Pearson, Spearman, MAE,
   MSE, and RMSE

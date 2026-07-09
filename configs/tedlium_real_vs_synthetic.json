@@ -1,6 +1,6 @@
 {
   "default_tedlium_root": "/store/store4/data/TEDLIUM_release-3",
-  "default_data_root": "/store/store5/acp21rjf/data/tedlium-moss-real-vs-synthetic",
+  "default_data_root": "/store/store5/data/acp21rjf/data/tedlium-moss-real-vs-synthetic",
   "source_variant": "legacy",
   "splits": ["dev", "test"],
   "sample_rate": 16000,

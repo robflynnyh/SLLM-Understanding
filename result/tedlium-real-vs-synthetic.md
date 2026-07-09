@@ -6,7 +6,7 @@ This note records the current TED-LIUM real-vs-synthetic benchmark setup.
 
 - Source: `/store/store4/data/TEDLIUM_release-3`
 - Source splits: `legacy/dev`, `legacy/test`
-- Generated root: `/store/store5/acp21rjf/data/tedlium-moss-real-vs-synthetic`
+- Generated root: `/store/store5/data/acp21rjf/data/tedlium-moss-real-vs-synthetic`
 - Real audio: extracted TED-LIUM target utterance clips
 - Synthetic audio: MOSS-TTS-Realtime generated from the target transcript
 - Speaker conditioning: a different utterance from the same TED speaker

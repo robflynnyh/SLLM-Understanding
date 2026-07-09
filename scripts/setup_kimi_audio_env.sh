@@ -7,7 +7,7 @@ cd "$ROOT_DIR"
 KIMI_VENV="${KIMI_VENV:-$ROOT_DIR/.venv-kimi}"
 PYTHON_BIN="${PYTHON_BIN:-python3.10}"
 UV_CACHE_DIR="${UV_CACHE_DIR:-$ROOT_DIR/.uv-cache}"
-HF_HOME="${HF_HOME:-/store/store5/acp21rjf/hf-cache}"
+HF_HOME="${HF_HOME:-/store/store5/data/acp21rjf/hf-cache}"
 
 export UV_CACHE_DIR
 export HF_HOME

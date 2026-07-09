@@ -1,7 +1,7 @@
 {
   "dataset_id": "voicemos-2022",
   "zenodo_record": "6572573",
-  "default_data_root": "/store/store5/acp21rjf/data/voicemos-2022",
+  "default_data_root": "/store/store5/data/acp21rjf/data/voicemos-2022",
   "raw_dir": "raw",
   "manifest_dir": "manifests",
   "tracks": ["main", "ood"]

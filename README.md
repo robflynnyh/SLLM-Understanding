@@ -12,7 +12,7 @@ Keep large datasets outside this repo. On this server the default EmoNet dataset
 root is:
 
 ```bash
-/store/store5/acp21rjf/data/emonet-voice-bench
+/store/store5/data/acp21rjf/data/emonet-voice-bench
 ```
 
 On another server, pass `--data-root /path/to/emonet-voice-bench` or set:
@@ -51,7 +51,7 @@ python scripts/prepare_emonet.py all
 Useful options:
 
 ```bash
-python scripts/prepare_emonet.py all --data-root /store/store5/acp21rjf/data/emonet-voice-bench
+python scripts/prepare_emonet.py all --data-root /store/store5/data/acp21rjf/data/emonet-voice-bench
 python scripts/prepare_emonet.py prepare --max-rows 50
 python scripts/prepare_emonet.py prepare --no-audio
 ```
@@ -69,7 +69,7 @@ Build smaller deterministic manifests:
 
 ```bash
 python scripts/build_emonet_splits.py \
-  --data-root /store/store5/acp21rjf/data/emonet-voice-bench
+  --data-root /store/store5/data/acp21rjf/data/emonet-voice-bench
 ```
 
 Defaults:
@@ -87,7 +87,7 @@ manifest:
 
 ```bash
 python scripts/build_emonet_requests.py \
-  --data-root /store/store5/acp21rjf/data/emonet-voice-bench \
+  --data-root /store/store5/data/acp21rjf/data/emonet-voice-bench \
   --output runs/emonet_one_by_one_requests.jsonl
 ```
 
@@ -106,7 +106,7 @@ To use the human-style 0-2 presence rubric instead:
 
 ```bash
 python scripts/build_emonet_requests.py \
-  --data-root /store/store5/acp21rjf/data/emonet-voice-bench \
+  --data-root /store/store5/data/acp21rjf/data/emonet-voice-bench \
   --output runs/emonet_human_rubric_requests.jsonl \
   --mode one_by_one_human_rubric
 ```
@@ -116,7 +116,7 @@ To save compute by scoring only each row's target emotion, add
 
 ```bash
 python scripts/build_emonet_requests.py \
-  --data-root /store/store5/acp21rjf/data/emonet-voice-bench \
+  --data-root /store/store5/data/acp21rjf/data/emonet-voice-bench \
   --output runs/emonet_target_human_rubric_requests.jsonl \
   --mode one_by_one_human_rubric \
   --emotion-set target
@@ -134,7 +134,7 @@ To ask the model directly for the paper-comparable 0-10 score:
 
 ```bash
 python scripts/build_emonet_requests.py \
-  --data-root /store/store5/acp21rjf/data/emonet-voice-bench \
+  --data-root /store/store5/data/acp21rjf/data/emonet-voice-bench \
   --output runs/emonet_target_paper_0_10_requests.jsonl \
   --mode one_by_one_paper_0_10 \
   --emotion-set target
@@ -148,7 +148,7 @@ explicit opposite or contrast state:
 
 ```bash
 python scripts/build_emonet_requests.py \
-  --data-root /store/store5/acp21rjf/data/emonet-voice-bench \
+  --data-root /store/store5/data/acp21rjf/data/emonet-voice-bench \
   --output runs/emonet_target_contrastive_rubric_requests.jsonl \
   --mode one_by_one_contrastive_rubric \
   --emotion-set target
@@ -166,7 +166,7 @@ every emotion:
 
 ```bash
 python scripts/build_emonet_requests.py \
-  --data-root /store/store5/acp21rjf/data/emonet-voice-bench \
+  --data-root /store/store5/data/acp21rjf/data/emonet-voice-bench \
   --output runs/emonet_all_at_once_requests.jsonl \
   --mode all_at_once
 ```
@@ -197,7 +197,7 @@ VoiceMOS 2022 / BVCC is supported as a MOS-style naturalness and quality
 benchmark. The default data root is:
 
 ```bash
-/store/store5/acp21rjf/data/voicemos-2022
+/store/store5/data/acp21rjf/data/voicemos-2022
 ```
 
 Download, extract, and prepare manifests:
@@ -243,7 +243,7 @@ Summarize VoiceMOS predictions:
 ```bash
 python scripts/summarize_voicemos_predictions.py \
   --predictions runs/moss_voicemos2022_main_dev_raw.jsonl \
-  --manifest /store/store5/acp21rjf/data/voicemos-2022/manifests/main_dev.jsonl
+  --manifest /store/store5/data/acp21rjf/data/voicemos-2022/manifests/main_dev.jsonl
 ```
 
 The summarizer reports utterance-level and system-level Pearson, Spearman, MAE,
@@ -259,7 +259,7 @@ SOMOS is supported as a MOS-style naturalness benchmark for neural TTS samples.
 The default data root is:
 
 ```bash
-/store/store5/acp21rjf/data/somos
+/store/store5/data/acp21rjf/data/somos
 ```
 
 Download, extract, and prepare manifests:
@@ -301,7 +301,7 @@ Summarize SOMOS predictions:
 ```bash
 python scripts/summarize_somos_predictions.py \
   --predictions runs/moss4b_somos_clean_test_quality_1_10_raw.jsonl \
-  --manifest /store/store5/acp21rjf/data/somos/manifests/clean_test.jsonl
+  --manifest /store/store5/data/acp21rjf/data/somos/manifests/clean_test.jsonl
 ```
 
 The planned SOMOS setup and pending results are recorded in `result/somos.md`.
@@ -380,12 +380,12 @@ TEMP=$PWD/scratch/tmp \
 TMP=$PWD/scratch/tmp \
 XDG_CACHE_HOME=$PWD/.cache \
 PIP_CACHE_DIR=$PWD/.cache/pip \
-HF_HOME=/store/store5/acp21rjf/hf-cache \
-HUGGINGFACE_HUB_CACHE=/store/store5/acp21rjf/hf-cache/hub \
+HF_HOME=/store/store5/data/acp21rjf/hf-cache \
+HUGGINGFACE_HUB_CACHE=/store/store5/data/acp21rjf/hf-cache/hub \
 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
 CUDA_VISIBLE_DEVICES=0 \
 .venv-moss/bin/python -u scripts/run_moss_in_context_asr_requests.py \
-  --model-path /store/store5/acp21rjf/models/MOSS-Audio-4B-Instruct \
+  --model-path /store/store5/data/acp21rjf/models/MOSS-Audio-4B-Instruct \
   --model-name OpenMOSS-Team/MOSS-Audio-4B-Instruct \
   --requests runs/in_context_asr_moss4b_transcription_requests.jsonl \
   --output runs/moss4b_in_context_asr_transcription_raw.jsonl \
@@ -420,7 +420,7 @@ Source TED-LIUM root on this server:
 Generated dataset root:
 
 ```bash
-/store/store5/acp21rjf/data/tedlium-moss-real-vs-synthetic
+/store/store5/data/acp21rjf/data/tedlium-moss-real-vs-synthetic
 ```
 
 Build a tiny dev/test smoke setup:
@@ -457,8 +457,8 @@ RUN_WITH_GPU_SCHEDULER=0 CUDA_VISIBLE_DEVICES=0 \
   --benchmark \
   --batch-size 32 \
   --max-audio-steps 512 \
-  --texts-file /store/store5/acp21rjf/data/tedlium-moss-real-vs-synthetic/manifests/moss_texts_dev.jsonl \
-  --out-dir /store/store5/acp21rjf/data/tedlium-moss-real-vs-synthetic/synthetic/moss-tts-realtime/dev \
+  --texts-file /store/store5/data/acp21rjf/data/tedlium-moss-real-vs-synthetic/manifests/moss_texts_dev.jsonl \
+  --out-dir /store/store5/data/acp21rjf/data/tedlium-moss-real-vs-synthetic/synthetic/moss-tts-realtime/dev \
   --seed 1234
 ```
 
@@ -499,12 +499,12 @@ TEMP=$PWD/scratch/tmp \
 TMP=$PWD/scratch/tmp \
 XDG_CACHE_HOME=$PWD/.cache \
 PIP_CACHE_DIR=$PWD/.cache/pip \
-HF_HOME=/store/store5/acp21rjf/hf-cache \
-HUGGINGFACE_HUB_CACHE=/store/store5/acp21rjf/hf-cache/hub \
+HF_HOME=/store/store5/data/acp21rjf/hf-cache \
+HUGGINGFACE_HUB_CACHE=/store/store5/data/acp21rjf/hf-cache/hub \
 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
 CUDA_VISIBLE_DEVICES=0,1,2,3 \
 python scripts/run_kimi_emonet_requests.py \
-  --model-path /store/store5/acp21rjf/models/Kimi-Audio-7B-Instruct \
+  --model-path /store/store5/data/acp21rjf/models/Kimi-Audio-7B-Instruct \
   --requests runs/emonet_one_by_one_requests.jsonl \
   --output runs/kimi_predictions_raw.jsonl \
   --limit 10 \
@@ -543,12 +543,12 @@ TEMP=$PWD/scratch/tmp \
 TMP=$PWD/scratch/tmp \
 XDG_CACHE_HOME=$PWD/.cache \
 PIP_CACHE_DIR=$PWD/.cache/pip \
-HF_HOME=/store/store5/acp21rjf/hf-cache \
-HUGGINGFACE_HUB_CACHE=/store/store5/acp21rjf/hf-cache/hub \
+HF_HOME=/store/store5/data/acp21rjf/hf-cache \
+HUGGINGFACE_HUB_CACHE=/store/store5/data/acp21rjf/hf-cache/hub \
 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
 CUDA_VISIBLE_DEVICES=0 \
 python scripts/run_moss_emonet_requests.py \
-  --model-path /store/store5/acp21rjf/models/MOSS-Audio-4B-Instruct \
+  --model-path /store/store5/data/acp21rjf/models/MOSS-Audio-4B-Instruct \
   --requests runs/emonet_train100_target_human_rubric_requests.jsonl \
   --output runs/moss_train100_target_human_rubric_raw.jsonl \
   --limit 100 \

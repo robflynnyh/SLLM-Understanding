@@ -6,10 +6,10 @@ This note records the completed SOMOS clean-test evaluation for
 ## Setup
 
 - Dataset: SOMOS, Zenodo record `7378801`
-- Default data root: `/store/store5/acp21rjf/data/somos`
+- Default data root: `/store/store5/data/acp21rjf/data/somos`
 - Primary split: `clean_test`
 - Model: `OpenMOSS-Team/MOSS-Audio-4B-Instruct`
-- Local model path: `/store/store5/acp21rjf/models/MOSS-Audio-4B-Instruct`
+- Local model path: `/store/store5/data/acp21rjf/models/MOSS-Audio-4B-Instruct`
 - Prompt mode: `quality_1_10_no_rubric`
 - Raw model scale: 1-10
 - Metric scale: 1-5 MOS, using the linear mapping
@@ -26,7 +26,7 @@ You are a trained assessor of speech quality. We are assessing the quality and n
 
 | Split | Manifest | Parsed predictions | Utterances | Systems |
 | --- | --- | ---: | ---: | ---: |
-| clean_test | `/store/store5/acp21rjf/data/somos/manifests/clean_test.jsonl` | 3000 / 3000 | 3000 | 201 |
+| clean_test | `/store/store5/data/acp21rjf/data/somos/manifests/clean_test.jsonl` | 3000 / 3000 | 3000 | 201 |
 
 ## Results
 
