@@ -502,6 +502,15 @@ python scripts/build_tedlium_real_vs_synthetic_requests.py \
   --output runs/tedlium_rvs_dev_real_vs_synthetic_0_10_requests.jsonl
 ```
 
+To include the expected transcript in the real-vs-synthetic prompt, use:
+
+```bash
+python scripts/build_tedlium_real_vs_synthetic_requests.py \
+  --split dev \
+  --mode real_vs_synthetic_0_10_with_transcript \
+  --output runs/tedlium_rvs_dev_real_vs_synthetic_0_10_with_transcript_requests.jsonl
+```
+
 Each request includes metadata labels for analysis, but the model prompt never
 tells the model whether the audio is real or synthetic.
 

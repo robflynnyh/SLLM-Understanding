@@ -105,6 +105,7 @@ def main() -> int:
             "quality_1_10_voicemos_exact",
             "quality_1_10_with_transcript",
             "real_vs_synthetic_0_10",
+            "real_vs_synthetic_0_10_with_transcript",
         ],
         default="quality_1_10",
     )
