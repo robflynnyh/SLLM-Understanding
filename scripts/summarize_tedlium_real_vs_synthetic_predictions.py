@@ -93,6 +93,8 @@ def main() -> int:
     parser.add_argument("--predictions", required=True, help="prediction JSONL path")
     parser.add_argument("--requests", required=True, help="request JSONL path used for the run")
     parser.add_argument("--score-key", help="override parsed prediction score field")
+    parser.add_argument("--prompt-mode", help="only summarize requests with this prompt_mode")
+    parser.add_argument("--split", choices=["dev", "test"], help="only summarize requests from this split")
     parser.add_argument(
         "--average-repeats",
         action="store_true",
@@ -105,9 +107,15 @@ def main() -> int:
 
     valid: list[tuple[dict[str, Any], float]] = []
     parse_failures = 0
+    considered = 0
     for prediction in predictions:
         score, _suffix = prediction_score(prediction, args.score_key)
         request = requests.get(prediction["request_id"])
+        if request is not None and args.prompt_mode and request.get("prompt_mode") != args.prompt_mode:
+            continue
+        if request is not None and args.split and request.get("split") != args.split:
+            continue
+        considered += 1
         if score is None or request is None or prediction.get("raw_parse_error") is not None:
             parse_failures += 1
             continue
@@ -115,7 +123,7 @@ def main() -> int:
 
     print(f"predictions: {Path(args.predictions)}")
     print(f"requests: {Path(args.requests)}")
-    print(f"parsed: {len(valid)}/{len(predictions)}")
+    print(f"parsed: {len(valid)}/{considered}")
     print(f"parse_failures: {parse_failures}")
     if args.average_repeats:
         original_valid = len(valid)
