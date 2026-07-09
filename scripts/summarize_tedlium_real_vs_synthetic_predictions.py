@@ -78,11 +78,26 @@ def paired_deltas(valid: list[tuple[dict[str, Any], float]]) -> list[float]:
     ]
 
 
+def average_repeats(valid: list[tuple[dict[str, Any], float]]) -> list[tuple[dict[str, Any], float]]:
+    by_request: dict[str, tuple[dict[str, Any], list[float]]] = {}
+    for request, score in valid:
+        request_id = str(request["request_id"])
+        if request_id not in by_request:
+            by_request[request_id] = (request, [])
+        by_request[request_id][1].append(score)
+    return [(request, average(scores)) for request, scores in by_request.values()]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--predictions", required=True, help="prediction JSONL path")
     parser.add_argument("--requests", required=True, help="request JSONL path used for the run")
     parser.add_argument("--score-key", help="override parsed prediction score field")
+    parser.add_argument(
+        "--average-repeats",
+        action="store_true",
+        help="average repeated predictions per request before reporting label and pair metrics",
+    )
     args = parser.parse_args()
 
     predictions = read_jsonl(Path(args.predictions).expanduser().resolve())
@@ -102,6 +117,10 @@ def main() -> int:
     print(f"requests: {Path(args.requests)}")
     print(f"parsed: {len(valid)}/{len(predictions)}")
     print(f"parse_failures: {parse_failures}")
+    if args.average_repeats:
+        original_valid = len(valid)
+        valid = average_repeats(valid)
+        print(f"repeat_averaged: {len(valid)}/{original_valid}")
 
     by_label: dict[str, list[float]] = defaultdict(list)
     for request, score in valid:

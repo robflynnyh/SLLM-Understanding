@@ -364,9 +364,15 @@ def generate_text(
     temperature: float,
     top_p: float,
     top_k: int,
+    seed: int | None = None,
 ) -> str:
     import torch
     from src.audio_io import load_audio
+
+    if seed is not None:
+        torch.manual_seed(seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(seed)
 
     raw_audio = load_audio(audio_path, sample_rate=processor.config.mel_sr)
     inputs = processor(text=prompt, audios=[raw_audio], return_tensors="pt")
@@ -411,6 +417,8 @@ def main() -> int:
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--top-p", type=float, default=1.0)
     parser.add_argument("--top-k", type=int, default=50)
+    parser.add_argument("--repeats", type=int, default=1, help="number of generations per request")
+    parser.add_argument("--seed", type=int, help="base random seed; actual seed is offset by request and repeat")
     parser.add_argument("--device-map", help="transformers device_map, e.g. auto or cuda:0")
     parser.add_argument("--dtype", default="auto", help="dtype passed to from_pretrained")
     parser.add_argument("--max-gpu-memory", help="per-GPU max memory when using device_map")
@@ -440,26 +448,39 @@ def main() -> int:
         max_cpu_memory=args.max_cpu_memory,
     )
 
+    if args.repeats < 1:
+        raise SystemExit("--repeats must be >= 1")
+
     with output_path.open("w", encoding="utf-8") as handle:
-        for request in requests:
+        for request_index, request in enumerate(requests):
             if not request.get("audio_path"):
                 raise ValueError(f"request has no audio_path: {request['request_id']}")
-            text = generate_text(
-                model=model,
-                processor=processor,
-                audio_path=request["audio_path"],
-                prompt=request["prompt"],
-                max_new_tokens=args.max_new_tokens,
-                temperature=args.temperature,
-                top_p=args.top_p,
-                top_k=args.top_k,
-            )
-            prediction = build_prediction(request, text, model_name)
-            handle.write(json.dumps(prediction, sort_keys=True) + "\n")
-            handle.flush()
+            for repeat_index in range(args.repeats):
+                generation_seed = None
+                if args.seed is not None:
+                    generation_seed = args.seed + request_index * args.repeats + repeat_index
+                text = generate_text(
+                    model=model,
+                    processor=processor,
+                    audio_path=request["audio_path"],
+                    prompt=request["prompt"],
+                    max_new_tokens=args.max_new_tokens,
+                    temperature=args.temperature,
+                    top_p=args.top_p,
+                    top_k=args.top_k,
+                    seed=generation_seed,
+                )
+                prediction = build_prediction(request, text, model_name)
+                prediction["repeat_index"] = repeat_index
+                prediction["repeat_count"] = args.repeats
+                prediction["generation_seed"] = generation_seed
+                handle.write(json.dumps(prediction, sort_keys=True) + "\n")
+                handle.flush()
 
     print(f"wrote: {output_path}")
     print(f"requests: {len(requests)}")
+    print(f"repeats: {args.repeats}")
+    print(f"generations: {len(requests) * args.repeats}")
     return 0
 
 
