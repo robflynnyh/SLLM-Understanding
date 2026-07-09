@@ -17,6 +17,7 @@ from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MOSS_CONFIG_PATH = REPO_ROOT / "configs" / "moss_audio.json"
+MOSS_AUDIO_PLACEHOLDER = "<|audio_bos|><|AUDIO|><|audio_eos|>"
 
 
 def configure_hf_cache() -> None:
@@ -301,6 +302,29 @@ def load_moss_audio(
     return model, processor
 
 
+def moss_prompt_with_audio_placeholders(prompt: str, audio_count: int) -> str:
+    if audio_count <= 1 or MOSS_AUDIO_PLACEHOLDER in prompt:
+        return prompt
+
+    content = prompt
+    if audio_count == 2 and "[first audio]" in content and "[second audio]" in content:
+        content = content.replace("[first audio]", MOSS_AUDIO_PLACEHOLDER, 1)
+        content = content.replace("[second audio]", MOSS_AUDIO_PLACEHOLDER, 1)
+    else:
+        placeholders = "\n".join(
+            f"Audio {index + 1}: {MOSS_AUDIO_PLACEHOLDER}" for index in range(audio_count)
+        )
+        content = f"{placeholders}\n\n{content}"
+
+    return (
+        "<|im_start|>system\n"
+        "You are a helpful assistant.<|im_end|>\n"
+        "<|im_start|>user\n"
+        f"{content}<|im_end|>\n"
+        "<|im_start|>assistant\n"
+    )
+
+
 def build_prediction(request: dict[str, Any], text: str, model_name: str) -> dict[str, Any]:
     mode = request.get("mode", "one_by_one")
     prediction = {
@@ -416,7 +440,8 @@ def generate_text(
             torch.cuda.manual_seed_all(seed)
 
     raw_audios = [load_audio(audio_path, sample_rate=processor.config.mel_sr) for audio_path in audio_paths]
-    inputs = processor(text=prompt, audios=raw_audios, return_tensors="pt")
+    processor_prompt = moss_prompt_with_audio_placeholders(prompt, len(raw_audios))
+    inputs = processor(text=processor_prompt, audios=raw_audios, return_tensors="pt")
     inputs = inputs.to(model.device)
     if inputs.get("audio_data") is not None:
         inputs["audio_data"] = inputs["audio_data"].to(model.dtype)
