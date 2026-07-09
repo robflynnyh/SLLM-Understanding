@@ -102,7 +102,12 @@ def normalize_transcript(text: str) -> str:
     return text.strip()
 
 
-def choose_prompt(target: Utterance, candidates: list[Utterance], min_duration_s: float, target_duration_s: float) -> Utterance:
+def choose_prompt(
+    target: Utterance,
+    candidates: list[Utterance],
+    min_duration_s: float,
+    target_duration_s: float,
+) -> Utterance | None:
     same_speaker = [
         utt
         for utt in candidates
@@ -118,7 +123,7 @@ def choose_prompt(target: Utterance, candidates: list[Utterance], min_duration_s
             if utt.talk_id == target.talk_id and utt.speaker_id == target.speaker_id and utt != target
         ]
     if not same_speaker:
-        raise ValueError(f"No different same-speaker prompt utterance for {target.utterance_id}")
+        return None
     return min(
         same_speaker,
         key=lambda utt: (
@@ -173,7 +178,7 @@ def build_split(
     split: str,
     max_items: int | None,
     overwrite_audio: bool,
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     config = load_config()
     sample_rate = int(config["sample_rate"])
     prompt_min_duration_s = float(config["prompt_min_duration_s"])
@@ -182,8 +187,25 @@ def build_split(
     targets = split_limit(all_utterances, max_items)
 
     records: list[dict[str, Any]] = []
+    skipped: list[dict[str, Any]] = []
     for row_id, target in enumerate(targets):
         prompt = choose_prompt(target, all_utterances, prompt_min_duration_s, prompt_target_duration_s)
+        if prompt is None:
+            skipped.append(
+                {
+                    "split": split,
+                    "utterance_id": target.utterance_id,
+                    "talk_id": target.talk_id,
+                    "speaker_id": target.speaker_id,
+                    "start_s": target.start_s,
+                    "end_s": target.end_s,
+                    "duration_s": target.duration_s,
+                    "text": target.text,
+                    "reason": "no_different_same_speaker_prompt_utterance",
+                }
+            )
+            continue
+        output_row_id = len(records)
         real_wav = data_root / "real" / split / f"{target.utterance_id}.wav"
         prompt_wav = data_root / "prompts" / split / f"{prompt.utterance_id}.wav"
         synthetic_wav = (
@@ -191,7 +213,7 @@ def build_split(
             / "synthetic"
             / "moss-tts-realtime"
             / split
-            / moss_output_filename(row_id, target.utterance_id)
+            / moss_output_filename(output_row_id, target.utterance_id)
         )
 
         extract_clip(
@@ -214,7 +236,7 @@ def build_split(
         records.append(
             {
                 "dataset": "tedlium-moss-real-vs-synthetic",
-                "row_id": row_id,
+                "row_id": output_row_id,
                 "split": split,
                 "utterance_id": target.utterance_id,
                 "talk_id": target.talk_id,
@@ -236,7 +258,7 @@ def build_split(
                 "prompt_is_same_utterance": prompt.utterance_id == target.utterance_id,
             }
         )
-    return records
+    return records, skipped
 
 
 def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
@@ -246,9 +268,15 @@ def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
             handle.write(json.dumps(row, sort_keys=True) + "\n")
 
 
-def write_split_outputs(data_root: Path, split: str, records: list[dict[str, Any]]) -> None:
+def write_split_outputs(
+    data_root: Path,
+    split: str,
+    records: list[dict[str, Any]],
+    skipped: list[dict[str, Any]],
+) -> None:
     manifest_dir = data_root / "manifests"
     write_jsonl(manifest_dir / f"{split}.jsonl", records)
+    write_jsonl(manifest_dir / f"skipped_{split}.jsonl", skipped)
 
     moss_rows = [
         {
@@ -311,16 +339,16 @@ def main() -> int:
 
     all_records = []
     for split in args.splits:
-        records = build_split(
+        records, skipped = build_split(
             tedlium_root=tedlium_root,
             data_root=data_root,
             split=split,
             max_items=args.max_items_per_split,
             overwrite_audio=args.overwrite_audio,
         )
-        write_split_outputs(data_root, split, records)
+        write_split_outputs(data_root, split, records, skipped)
         all_records.extend(records)
-        print(f"{split}: {len(records)} rows")
+        print(f"{split}: {len(records)} rows, skipped {len(skipped)}")
 
     metadata = {
         "dataset": "tedlium-moss-real-vs-synthetic",
