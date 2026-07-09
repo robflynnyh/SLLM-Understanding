@@ -109,6 +109,37 @@ delta on both dev and test. The direct detector prompts also separate the
 classes, but `real_vs_synthetic_0_10` has many parse failures; adding the
 transcript greatly improves parse rate while reducing the separation magnitude.
 
+### Pairwise A/B Real-Vs-Synthetic
+
+Each pairwise request passes both recordings for the same utterance and asks the
+model to choose which recording is synthetic. Each utterance is evaluated in both
+directions:
+
+- `real_a_synthetic_b`: audio A is real, audio B is synthetic.
+- `synthetic_a_real_b`: audio A is synthetic, audio B is real.
+
+`Pair score` is the mean correctness across the two directions for each
+utterance, then averaged over complete pairs. A value of `1.0` means both
+directions are correct, `0.5` means exactly one direction is correct, and `0.0`
+means both directions are wrong.
+
+| Model | Split | Prompt mode | Parsed | Direction accuracy | Pair score | Both correct | One correct | Both wrong | Choice A | Choice B |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| MOSS-Audio 4B Instruct | dev | `pairwise_real_vs_synthetic` | 1006 / 1006 | 0.494 | 0.494 | 34 | 429 | 40 | 0.907 | 0.093 |
+| MOSS-Audio 4B Instruct | test | `pairwise_real_vs_synthetic` | 2306 / 2306 | 0.537 | 0.537 | 164 | 910 | 79 | 0.882 | 0.118 |
+| MOSS-Audio 4B Instruct | dev | `pairwise_real_vs_synthetic_with_transcript` | 1006 / 1006 | 0.496 | 0.496 | 1 | 497 | 5 | 0.994 | 0.006 |
+| MOSS-Audio 4B Instruct | test | `pairwise_real_vs_synthetic_with_transcript` | 2306 / 2306 | 0.501 | 0.501 | 9 | 1137 | 7 | 0.993 | 0.007 |
+| Kimi-Audio 7B Instruct | dev | `pairwise_real_vs_synthetic` | 1006 / 1006 | 0.800 | 0.800 | 311 | 183 | 9 | 0.402 | 0.598 |
+| Kimi-Audio 7B Instruct | test | `pairwise_real_vs_synthetic` | 2306 / 2306 | 0.785 | 0.785 | 678 | 455 | 20 | 0.461 | 0.539 |
+| Kimi-Audio 7B Instruct | dev | `pairwise_real_vs_synthetic_with_transcript` | 1006 / 1006 | 0.786 | 0.786 | 301 | 189 | 13 | 0.374 | 0.626 |
+| Kimi-Audio 7B Instruct | test | `pairwise_real_vs_synthetic_with_transcript` | 2306 / 2306 | 0.764 | 0.764 | 635 | 491 | 27 | 0.394 | 0.606 |
+
+MOSS is approximately chance after both-direction averaging and has a strong
+choice-A bias, especially when the transcript is included. Kimi is substantially
+better in this pairwise setup; unlike the single-audio quality-score setup, the
+transcript-conditioned pairwise prompt is slightly worse than the no-transcript
+pairwise prompt on both dev and test.
+
 ## Smoke Hashes
 
 | Split | File | SHA256 |
@@ -144,3 +175,6 @@ Ignored run artifacts used for the judge results:
 - `runs/moss4b_tedlium_rvs_test_real_vs_synthetic_0_10_with_transcript_raw.jsonl`
 - `runs/kimi_tedlium_rvs_dev_all_prompts_raw.jsonl`
 - `runs/kimi_tedlium_rvs_test_all_prompts_raw.jsonl`
+- `runs/tedlium_rvs_pairwise_all_requests.jsonl`
+- `runs/moss4b_tedlium_rvs_pairwise_all_raw.jsonl`
+- `runs/kimi_tedlium_rvs_pairwise_all_raw.jsonl`
