@@ -20,7 +20,7 @@ A two-row-per-split smoke set has been prepared and generated.
 | dev | 2 | 4 | 0 | complete |
 | test | 2 | 4 | 0 | complete |
 
-Smoke generation commands used `batch-size=2`, `max-audio-steps=128`,
+Smoke generation commands used `batch-size=2`, `max-audio-steps=768`,
 `seed=1234`, and the MOSS-TTS-Realtime recommended sampled decoding settings:
 
 ```text
@@ -36,10 +36,14 @@ Smoke output hashes:
 
 | Split | File | SHA256 |
 | --- | --- | --- |
-| dev | `0000_dev__AlGore_2009__Al_Gore__13.040_23.460.wav` | `911e19b6cedf79086ccaa82b5f0692cf464315d2b97e62fb5b5fb748dc716f4d` |
-| dev | `0001_dev__AlGore_2009__Al_Gore__23.460_40.050.wav` | `a5b0d0c3ded1ddfc65213ee02ae372af658c9443a54e597f5cf2b1d6b8b36859` |
-| test | `0000_test__AimeeMullins_2009P__AimeeMullins__17.820_28.810.wav` | `7057b0037f9845d032a26f104643dd56d76ad075f6af235a393920b7204d4eb0` |
-| test | `0001_test__AimeeMullins_2009P__AimeeMullins__28.810_40.266.wav` | `a5d16a89181ac5a0fbf4cc7a76c21a990b1d7480492dce4fa7bf66098c634041` |
+| dev | `0000_dev__AlGore_2009__Al_Gore__13.040_23.460.wav` | `952bfcc11289b7dbd62cbe4e0acd203bafb7b225e32e6486ae03b8d55fba41de` |
+| dev | `0001_dev__AlGore_2009__Al_Gore__23.460_40.050.wav` | `3e7134578fae7b3a6f300ac88770bf21943434e584897d88812a4557ae87c770` |
+| test | `0000_test__AimeeMullins_2009P__AimeeMullins__17.820_28.810.wav` | `64621a48685816fc4165fc8913a8587d97bfecf015e733cfd3752842964d0f2c` |
+| test | `0001_test__AimeeMullins_2009P__AimeeMullins__28.810_40.266.wav` | `5af76f6bee359c2e988944453814f5db264d11a8203458381e1acd80e9c186b8` |
+
+With this cap, the smoke batches stopped by EOS rather than by the cap:
+`dev` produced 26.72s total audio and `test` produced 28.72s total audio for
+two files each.
 
 ## Artifacts
 

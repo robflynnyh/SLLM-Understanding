@@ -456,7 +456,7 @@ RUN_WITH_GPU_SCHEDULER=0 CUDA_VISIBLE_DEVICES=0 \
 /exp/exp4/acp21rjf/moss-realtime-demo/scripts/run_batch_rollout.sh \
   --benchmark \
   --batch-size 32 \
-  --max-audio-steps 512 \
+  --max-audio-steps 768 \
   --texts-file /store/store5/data/acp21rjf/data/tedlium-moss-real-vs-synthetic/manifests/moss_texts_dev.jsonl \
   --out-dir /store/store5/data/acp21rjf/data/tedlium-moss-real-vs-synthetic/synthetic/moss-tts-realtime/dev \
   --seed 1234
