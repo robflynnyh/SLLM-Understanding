@@ -51,6 +51,19 @@ def question_target(row: dict[str, Any]) -> str:
     return str(row.get("question_target") or "synthetic")
 
 
+def opposite_choice(choice: str) -> str:
+    return "B" if choice == "A" else "A"
+
+
+def inferred_synthetic_choice(row: dict[str, Any]) -> str | None:
+    choice = row.get("raw_parsed_choice")
+    if choice not in {"A", "B"}:
+        return None
+    if question_target(row) == "real":
+        return opposite_choice(str(choice))
+    return str(choice)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--predictions", required=True, help="pairwise prediction JSONL path")
@@ -83,6 +96,9 @@ def main() -> int:
     parse_failures = len(rows) - len(parsed)
     correct = [row for row in parsed if row.get("is_correct") is True]
     choices = Counter(str(row["raw_parsed_choice"]) for row in parsed)
+    inferred_synthetic_choices = Counter(
+        choice for row in parsed if (choice := inferred_synthetic_choice(row)) is not None
+    )
 
     print(f"predictions: {prediction_path}")
     if request_path:
@@ -93,6 +109,8 @@ def main() -> int:
     print(f"accuracy: {pct(len(correct), len(parsed))}")
     print(f"choice_a_rate: {pct(choices['A'], len(parsed))}")
     print(f"choice_b_rate: {pct(choices['B'], len(parsed))}")
+    print(f"inferred_synthetic_a_rate: {pct(inferred_synthetic_choices['A'], len(parsed))}")
+    print(f"inferred_synthetic_b_rate: {pct(inferred_synthetic_choices['B'], len(parsed))}")
 
     by_direction: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in parsed:
