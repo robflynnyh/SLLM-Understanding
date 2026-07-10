@@ -16,6 +16,7 @@ EVAL_CONFIG_PATH = REPO_ROOT / "configs" / "tedlium_real_vs_synthetic_eval.json"
 PAIRWISE_MODES = {
     "pairwise_real_vs_synthetic",
     "pairwise_real_vs_synthetic_with_transcript",
+    "pairwise_real_vs_synthetic_question_balanced",
 }
 
 
@@ -85,7 +86,6 @@ def build_requests(
     limit: int | None = None,
 ) -> None:
     eval_mode = load_json(EVAL_CONFIG_PATH)[config_key]
-    prompt_template = eval_mode["prompt_template"]
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8") as handle:
@@ -97,39 +97,61 @@ def build_requests(
                 real = pair_rows["real"]
                 synthetic = pair_rows["synthetic"]
                 directions = [
-                    ("real_a_synthetic_b", real, synthetic, "B"),
-                    ("synthetic_a_real_b", synthetic, real, "A"),
+                    ("real_a_synthetic_b", real, synthetic),
+                    ("synthetic_a_real_b", synthetic, real),
                 ]
-                for direction, row_a, row_b, correct_choice in directions:
-                    request = {
-                        "request_id": (
+                if config_key == "pairwise_real_vs_synthetic_question_balanced":
+                    question_targets = [
+                        ("synthetic", "synthetic_choice", eval_mode["prompt_templates"]["synthetic"]),
+                        ("real", "real_choice", eval_mode["prompt_templates"]["real"]),
+                    ]
+                else:
+                    question_targets = [
+                        ("synthetic", "synthetic_choice", eval_mode["prompt_template"]),
+                    ]
+                for direction, row_a, row_b in directions:
+                    correct_by_target = {
+                        "synthetic": "A" if row_a["label"] == "synthetic" else "B",
+                        "real": "A" if row_a["label"] == "real" else "B",
+                    }
+                    for question_target, target_label, prompt_template in question_targets:
+                        request_id = (
                             f"tedlium_rvs__{row_a['split']}__{config_key}__"
                             f"pair-{pair_index:06d}__{direction}"
-                        ),
-                        "mode": "pairwise_real_vs_synthetic",
-                        "row_id": emitted,
-                        "audio_paths": [require_audio(data_root, row_a), require_audio(data_root, row_b)],
-                        "audio_a_label": row_a["label"],
-                        "audio_b_label": row_b["label"],
-                        "correct_choice": correct_choice,
-                        "target_label": "synthetic_choice",
-                        "prompt": format_prompt(prompt_template, row_a),
-                        "raw_choice_set": list(eval_mode["choices"]),
-                        "dataset": "tedlium-moss-real-vs-synthetic",
-                        "split": row_a["split"],
-                        "sample_id": row_a["pair_id"],
-                        "pair_id": row_a["pair_id"],
-                        "talk_id": row_a["talk_id"],
-                        "speaker_id": row_a["speaker_id"],
-                        "transcript": row_a["text"],
-                        "prompt_mode": config_key,
-                        "direction": direction,
-                        "preserve_raw_scores": True,
-                    }
-                    handle.write(json.dumps(request, sort_keys=True) + "\n")
-                    emitted += 1
+                        )
+                        if config_key == "pairwise_real_vs_synthetic_question_balanced":
+                            request_id = f"{request_id}__ask-{question_target}"
+                        request = {
+                            "request_id": request_id,
+                            "mode": "pairwise_real_vs_synthetic",
+                            "row_id": emitted,
+                            "audio_paths": [
+                                require_audio(data_root, row_a),
+                                require_audio(data_root, row_b),
+                            ],
+                            "audio_a_label": row_a["label"],
+                            "audio_b_label": row_b["label"],
+                            "correct_choice": correct_by_target[question_target],
+                            "target_label": target_label,
+                            "question_target": question_target,
+                            "prompt": format_prompt(prompt_template, row_a),
+                            "raw_choice_set": list(eval_mode["choices"]),
+                            "dataset": "tedlium-moss-real-vs-synthetic",
+                            "split": row_a["split"],
+                            "sample_id": row_a["pair_id"],
+                            "pair_id": row_a["pair_id"],
+                            "talk_id": row_a["talk_id"],
+                            "speaker_id": row_a["speaker_id"],
+                            "transcript": row_a["text"],
+                            "prompt_mode": config_key,
+                            "direction": direction,
+                            "preserve_raw_scores": True,
+                        }
+                        handle.write(json.dumps(request, sort_keys=True) + "\n")
+                        emitted += 1
             return
 
+        prompt_template = eval_mode["prompt_template"]
         raw_score_scale = score_scale(eval_mode)
         selected_rows = rows[:limit] if limit is not None else rows
         for row_id, row in enumerate(selected_rows):
@@ -173,6 +195,7 @@ def main() -> int:
             "real_vs_synthetic_0_10_with_transcript",
             "pairwise_real_vs_synthetic",
             "pairwise_real_vs_synthetic_with_transcript",
+            "pairwise_real_vs_synthetic_question_balanced",
         ],
         default="quality_1_10",
     )

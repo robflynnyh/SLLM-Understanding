@@ -387,6 +387,7 @@ def build_prediction(request: dict[str, Any], text: str, model_name: str) -> dic
                 "pair_id": request["pair_id"],
                 "prompt_mode": request.get("prompt_mode"),
                 "direction": request["direction"],
+                "question_target": request.get("question_target"),
                 "audio_a_label": request["audio_a_label"],
                 "audio_b_label": request["audio_b_label"],
                 "correct_choice": correct_choice,

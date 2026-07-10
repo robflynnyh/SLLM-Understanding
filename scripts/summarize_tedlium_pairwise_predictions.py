@@ -47,12 +47,21 @@ def merged_prediction(
     return merged
 
 
+def question_target(row: dict[str, Any]) -> str:
+    return str(row.get("question_target") or "synthetic")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--predictions", required=True, help="pairwise prediction JSONL path")
     parser.add_argument("--requests", help="request JSONL path used for the run")
     parser.add_argument("--prompt-mode", help="only summarize this prompt_mode")
     parser.add_argument("--split", choices=["dev", "test"], help="only summarize this split")
+    parser.add_argument(
+        "--question-target",
+        choices=["real", "synthetic"],
+        help="only summarize requests asking for this target",
+    )
     args = parser.parse_args()
 
     prediction_path = Path(args.predictions).expanduser().resolve()
@@ -65,6 +74,8 @@ def main() -> int:
         if args.prompt_mode and row.get("prompt_mode") != args.prompt_mode:
             continue
         if args.split and row.get("split") != args.split:
+            continue
+        if args.question_target and question_target(row) != args.question_target:
             continue
         rows.append(row)
 
@@ -95,32 +106,47 @@ def main() -> int:
         print(f"{direction}_choice_a_rate: {pct(direction_choices['A'], len(direction_rows))}")
         print(f"{direction}_choice_b_rate: {pct(direction_choices['B'], len(direction_rows))}")
 
-    by_pair: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    by_target: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in parsed:
-        by_pair[str(row["pair_id"])].append(row)
+        by_target[question_target(row)].append(row)
+    for target in sorted(by_target):
+        target_rows = by_target[target]
+        target_correct = sum(row.get("is_correct") is True for row in target_rows)
+        target_choices = Counter(str(row["raw_parsed_choice"]) for row in target_rows)
+        print(f"ask_{target}_n: {len(target_rows)}")
+        print(f"ask_{target}_accuracy: {pct(target_correct, len(target_rows))}")
+        print(f"ask_{target}_choice_a_rate: {pct(target_choices['A'], len(target_rows))}")
+        print(f"ask_{target}_choice_b_rate: {pct(target_choices['B'], len(target_rows))}")
+
+    expected_cells = {
+        (str(row.get("direction", "unknown")), question_target(row))
+        for row in rows
+    }
+    expected_count = len(expected_cells)
+
+    by_pair: dict[str, dict[tuple[str, str], dict[str, Any]]] = defaultdict(dict)
+    for row in parsed:
+        cell = (str(row.get("direction", "unknown")), question_target(row))
+        by_pair[str(row["pair_id"])][cell] = row
 
     complete_pair_scores = []
-    both_correct = 0
-    one_correct = 0
-    both_wrong = 0
-    for pair_rows in by_pair.values():
-        directions = {str(row.get("direction")) for row in pair_rows}
-        if directions != {"real_a_synthetic_b", "synthetic_a_real_b"}:
+    correct_count_histogram: Counter[int] = Counter()
+    for pair_cells in by_pair.values():
+        if set(pair_cells) != expected_cells:
             continue
-        score = mean([1.0 if row.get("is_correct") is True else 0.0 for row in pair_rows])
+        correct_count = sum(row.get("is_correct") is True for row in pair_cells.values())
+        score = correct_count / expected_count if expected_count else float("nan")
         complete_pair_scores.append(score)
-        if score == 1.0:
-            both_correct += 1
-        elif score == 0.5:
-            one_correct += 1
-        elif score == 0.0:
-            both_wrong += 1
+        correct_count_histogram[correct_count] += 1
 
     print(f"complete_pairs: {len(complete_pair_scores)}")
+    print(f"requests_per_complete_pair: {expected_count}")
     print(f"pair_score_mean: {fmt(mean(complete_pair_scores))}")
-    print(f"both_correct_pairs: {both_correct}")
-    print(f"one_correct_pairs: {one_correct}")
-    print(f"both_wrong_pairs: {both_wrong}")
+    for correct_count in range(expected_count + 1):
+        print(f"pairs_with_{correct_count}_correct: {correct_count_histogram[correct_count]}")
+    print(f"all_correct_pairs: {correct_count_histogram[expected_count]}")
+    print(f"one_correct_pairs: {correct_count_histogram[1]}")
+    print(f"all_wrong_pairs: {correct_count_histogram[0]}")
     return 0
 
 
