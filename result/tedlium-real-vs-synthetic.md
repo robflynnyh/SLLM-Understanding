@@ -140,6 +140,25 @@ better in this pairwise setup; unlike the single-audio quality-score setup, the
 transcript-conditioned pairwise prompt is slightly worse than the no-transcript
 pairwise prompt on both dev and test.
 
+#### Question-Balanced Pairwise Early Stop
+
+The `pairwise_real_vs_synthetic_question_balanced` mode crosses both audio
+orders with both question targets, giving four requests per utterance pair:
+ask which recording is synthetic, and ask which recording is real. For the
+combined score, `ask-real` responses are converted through correctness rather
+than by averaging raw `A`/`B` choices.
+
+The Kimi run was stopped early on 2026-07-10 after dev completed and partial
+test showed the same pattern. Reason: it was clearly worse than the best
+non-transcript pairwise setup above. The completed dev score was `0.659`,
+compared with `0.800` for `pairwise_real_vs_synthetic`; the degradation came
+from the real-question half.
+
+| Model | Split | Prompt mode | Parsed | Pair score | Ask synthetic accuracy | Ask real accuracy | Notes |
+| --- | --- | --- | ---: | ---: | ---: | ---: | --- |
+| Kimi-Audio 7B Instruct | dev | `pairwise_real_vs_synthetic_question_balanced` | 2012 / 2012 | 0.659 | 0.800 | 0.518 | complete dev |
+| Kimi-Audio 7B Instruct | test | `pairwise_real_vs_synthetic_question_balanced` | 765 / 4612 | 0.671 | 0.872 | 0.469 | partial test at stop |
+
 ## Smoke Hashes
 
 | Split | File | SHA256 |
@@ -178,3 +197,5 @@ Ignored run artifacts used for the judge results:
 - `runs/tedlium_rvs_pairwise_all_requests.jsonl`
 - `runs/moss4b_tedlium_rvs_pairwise_all_raw.jsonl`
 - `runs/kimi_tedlium_rvs_pairwise_all_raw.jsonl`
+- `runs/tedlium_rvs_pairwise_question_balanced_all_requests.jsonl`
+- `runs/kimi_tedlium_rvs_pairwise_question_balanced_all_raw.jsonl`
