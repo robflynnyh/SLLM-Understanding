@@ -514,6 +514,88 @@ python scripts/build_tedlium_real_vs_synthetic_requests.py \
 Each request includes metadata labels for analysis, but the model prompt never
 tells the model whether the audio is real or synthetic.
 
+### AutoPCP
+
+The repo includes a standalone AutoPCP implementation for scoring generated
+speech against source/reference audio, using the public Meta comparator as the
+behavioural reference without depending on Stopes.
+
+Runtime dependencies are the direct model/audio stack only:
+
+- `torch`
+- `torchaudio` or `soundfile`
+- `scipy` if `torchaudio` is unavailable for resampling
+- `transformers`
+- `numpy`
+- `tqdm`
+
+The existing MOSS environment already installs these dependencies. The
+implementation loads audio files directly, converts stereo to mono, resamples to
+16 kHz, extracts `facebook/wav2vec2-large-xlsr-53` hidden layer 9, applies
+masked mean pooling without padded frames, loads the released
+`AutoPCP-multilingual-v2` comparator `.config` and `.pt`, and averages both
+directions of the comparator score.
+
+The comparator checkpoint is downloaded automatically from:
+
+```text
+https://dl.fbaipublicfiles.com/speech_expressivity_evaluation/AutoPCP-multilingual-v2.zip
+```
+
+By default it is cached under `AUTO_PCP_CACHE_DIR` if set, otherwise
+`$XDG_CACHE_HOME/autopcp`, otherwise `~/.cache/autopcp`. On this server, prefer
+store5 for the cache:
+
+```bash
+export AUTO_PCP_CACHE_DIR=/store/store5/data/acp21rjf/cache/autopcp
+```
+
+Python API:
+
+```python
+from sllm_understanding.metrics import AutoPCP
+
+scorer = AutoPCP(device="cuda", batch_size=16)
+scores = scorer.score_pairs(source_paths, target_paths)
+```
+
+CLI for one pair:
+
+```bash
+python scripts/score_autopcp.py \
+  --src real.wav \
+  --tgt synthetic.wav \
+  --output runs/autopcp_score.txt
+```
+
+CLI for many pairs:
+
+```bash
+python scripts/score_autopcp.py \
+  --tsv runs/audio_pairs.tsv \
+  --output runs/autopcp_scores.txt \
+  --device cuda \
+  --batch-size 16
+```
+
+The TSV must contain `src_audio` and `tgt_audio` columns. The CLI writes one
+floating-point score per pair and prints the mean to stderr.
+
+For the TED-LIUM real-vs-synthetic generated files, build that TSV directly
+from the prepared pair manifest:
+
+```bash
+python scripts/build_tedlium_autopcp_pairs_tsv.py \
+  --split test \
+  --output runs/tedlium_test_autopcp_pairs.tsv
+
+python scripts/score_autopcp.py \
+  --tsv runs/tedlium_test_autopcp_pairs.tsv \
+  --output runs/tedlium_test_autopcp_scores.txt \
+  --device cuda \
+  --batch-size 16
+```
+
 ## Kimi-Audio
 
 The first open audio-language model target is
