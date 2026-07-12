@@ -231,7 +231,7 @@ def transcribe_records_transformers(
                     "normalized_prediction": normalize_text(prediction),
                     "reference_words": ref_words,
                     "edit_distance": edits,
-                    "wer": f"{wer:.8f}" if not math.isnan(wer) else "nan",
+                    "wer_pct": f"{wer * 100:.8f}" if not math.isnan(wer) else "nan",
                 }
             )
     return output_rows
@@ -278,7 +278,7 @@ def transcribe_records_openai(
                 "normalized_prediction": normalize_text(prediction),
                 "reference_words": ref_words,
                 "edit_distance": edits,
-                "wer": f"{wer:.8f}" if not math.isnan(wer) else "nan",
+                "wer_pct": f"{wer * 100:.8f}" if not math.isnan(wer) else "nan",
             }
         )
     return output_rows
@@ -325,8 +325,8 @@ def pair_rows(transcripts: list[dict[str, Any]]) -> list[dict[str, Any]]:
         synthetic = rows.get("synthetic")
         if source is None or synthetic is None:
             continue
-        source_wer = float(source["wer"])
-        synthetic_wer = float(synthetic["wer"])
+        source_wer_pct = float(source["wer_pct"])
+        synthetic_wer_pct = float(synthetic["wer_pct"])
         pairs.append(
             {
                 "split": split,
@@ -339,9 +339,9 @@ def pair_rows(transcripts: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "reference_words": source["reference_words"],
                 "source_edit_distance": source["edit_distance"],
                 "synthetic_edit_distance": synthetic["edit_distance"],
-                "source_wer": f"{source_wer:.8f}",
-                "synthetic_wer": f"{synthetic_wer:.8f}",
-                "wer_delta_synthetic_minus_source": f"{synthetic_wer - source_wer:.8f}",
+                "source_wer_pct": f"{source_wer_pct:.8f}",
+                "synthetic_wer_pct": f"{synthetic_wer_pct:.8f}",
+                "wer_delta_pct_synthetic_minus_source": f"{synthetic_wer_pct - source_wer_pct:.8f}",
             }
         )
     return pairs
@@ -361,19 +361,19 @@ def summarize(pairs: list[dict[str, Any]]) -> list[dict[str, str]]:
         selected = pairs if split == "all" else [row for row in pairs if row["split"] == split]
         if not selected:
             continue
-        source = [float(row["source_wer"]) for row in selected]
-        synthetic = [float(row["synthetic_wer"]) for row in selected]
-        delta = [float(row["wer_delta_synthetic_minus_source"]) for row in selected]
+        source = [float(row["source_wer_pct"]) for row in selected]
+        synthetic = [float(row["synthetic_wer_pct"]) for row in selected]
+        delta = [float(row["wer_delta_pct_synthetic_minus_source"]) for row in selected]
         out.append(
             {
                 "split": split,
                 "pairs": str(len(selected)),
-                "source_wer_mean": f"{sum(source) / len(source):.8f}",
-                "synthetic_wer_mean": f"{sum(synthetic) / len(synthetic):.8f}",
-                "wer_delta_mean": f"{sum(delta) / len(delta):.8f}",
-                "source_wer_median": f"{median(source):.8f}",
-                "synthetic_wer_median": f"{median(synthetic):.8f}",
-                "wer_delta_median": f"{median(delta):.8f}",
+                "source_wer_pct_mean": f"{sum(source) / len(source):.8f}",
+                "synthetic_wer_pct_mean": f"{sum(synthetic) / len(synthetic):.8f}",
+                "wer_delta_pct_mean": f"{sum(delta) / len(delta):.8f}",
+                "source_wer_pct_median": f"{median(source):.8f}",
+                "synthetic_wer_pct_median": f"{median(synthetic):.8f}",
+                "wer_delta_pct_median": f"{median(delta):.8f}",
             }
         )
     return out
@@ -437,7 +437,7 @@ def main() -> int:
         "normalized_prediction",
         "reference_words",
         "edit_distance",
-        "wer",
+        "wer_pct",
     ]
     pair_fields = [
         "split",
@@ -450,19 +450,19 @@ def main() -> int:
         "reference_words",
         "source_edit_distance",
         "synthetic_edit_distance",
-        "source_wer",
-        "synthetic_wer",
-        "wer_delta_synthetic_minus_source",
+        "source_wer_pct",
+        "synthetic_wer_pct",
+        "wer_delta_pct_synthetic_minus_source",
     ]
     summary_fields = [
         "split",
         "pairs",
-        "source_wer_mean",
-        "synthetic_wer_mean",
-        "wer_delta_mean",
-        "source_wer_median",
-        "synthetic_wer_median",
-        "wer_delta_median",
+        "source_wer_pct_mean",
+        "synthetic_wer_pct_mean",
+        "wer_delta_pct_mean",
+        "source_wer_pct_median",
+        "synthetic_wer_pct_median",
+        "wer_delta_pct_median",
     ]
 
     for split in args.splits:
@@ -483,8 +483,8 @@ def main() -> int:
 
     for row in summary:
         print(
-            "split={split} pairs={pairs} source_wer={source_wer_mean} "
-            "synthetic_wer={synthetic_wer_mean} delta={wer_delta_mean}".format(**row)
+            "split={split} pairs={pairs} source_wer_pct={source_wer_pct_mean} "
+            "synthetic_wer_pct={synthetic_wer_pct_mean} delta_pct={wer_delta_pct_mean}".format(**row)
         )
     return 0
 
