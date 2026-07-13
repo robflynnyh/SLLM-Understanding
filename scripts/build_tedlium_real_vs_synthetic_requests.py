@@ -155,9 +155,14 @@ def build_requests(
         raw_score_scale = score_scale(eval_mode)
         selected_rows = rows[:limit] if limit is not None else rows
         for row_id, row in enumerate(selected_rows):
+            mode = (
+                "quality_features_1_10"
+                if config_key == "quality_features_1_10"
+                else "one_by_one"
+            )
             request = {
                 "request_id": f"tedlium_rvs__{row['split']}__{config_key}__row-{row_id:06d}__{row['label']}",
-                "mode": "one_by_one",
+                "mode": mode,
                 "row_id": row_id,
                 "audio_path": require_audio(data_root, row),
                 "target_label": "speech_quality_naturalness",
@@ -175,6 +180,8 @@ def build_requests(
                 "prompt_mode": config_key,
                 "preserve_raw_scores": True,
             }
+            if mode == "quality_features_1_10":
+                request["scored_features"] = list(eval_mode["features"])
             handle.write(json.dumps(request, sort_keys=True) + "\n")
 
 
@@ -191,6 +198,7 @@ def main() -> int:
             "quality_1_10",
             "quality_1_10_voicemos_exact",
             "quality_1_10_with_transcript",
+            "quality_features_1_10",
             "real_vs_synthetic_0_10",
             "real_vs_synthetic_0_10_with_transcript",
             "pairwise_real_vs_synthetic",

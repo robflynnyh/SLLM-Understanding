@@ -220,6 +220,100 @@ def parse_contrastive_scores(text: str, score_scale: dict[str, Any]) -> dict[str
     }
 
 
+def parse_quality_feature_scores(
+    text: str,
+    expected_features: list[str],
+    score_scale: dict[str, Any],
+) -> dict[str, Any]:
+    payload = parse_json_object(text)
+    if payload is None:
+        return {
+            "feature_scores": {},
+            "feature_observations": {},
+            "overall_score": None,
+            "overall_reason": None,
+            "missing_fields": [*expected_features, "overall_score"],
+            "extra_fields": [],
+            "invalid_scores": {},
+            "structure_warning": None,
+            "parse_error": "response did not contain a JSON object",
+        }
+
+    raw_scores = payload.get("scores")
+    raw_observations = payload.get("observations")
+    if not isinstance(raw_scores, dict):
+        raw_scores = {}
+    if not isinstance(raw_observations, dict):
+        raw_observations = {}
+
+    expected_fields = [*expected_features, "overall_score"]
+    parsed_scores: dict[str, float] = {}
+    invalid_scores: dict[str, Any] = {}
+    for field in expected_features:
+        if field not in raw_scores:
+            continue
+        score = parse_numeric_score(raw_scores[field], score_scale)
+        if score is None:
+            invalid_scores[field] = raw_scores[field]
+        else:
+            parsed_scores[field] = score
+    overall_score = parse_numeric_score(payload.get("overall_score"), score_scale)
+    if overall_score is not None:
+        parsed_scores["overall_score"] = overall_score
+    elif "overall_score" in payload:
+        invalid_scores["overall_score"] = payload["overall_score"]
+
+    feature_observations = {
+        feature: raw_observations[feature]
+        for feature in expected_features
+        if isinstance(raw_observations.get(feature), str) and raw_observations[feature].strip()
+    }
+    missing_observations = [
+        feature for feature in expected_features if feature not in feature_observations
+    ]
+    overall_reason = payload.get("overall_reason")
+    if not isinstance(overall_reason, str) or not overall_reason.strip():
+        overall_reason = None
+
+    missing_score_fields = [field for field in expected_fields if field not in parsed_scores]
+    missing_fields = list(missing_score_fields)
+    missing_fields.extend(f"observations.{field}" for field in missing_observations)
+    if overall_reason is None:
+        missing_fields.append("overall_reason")
+    expected_top_level = {"observations", "scores", "overall_score", "overall_reason"}
+    extra_fields = sorted(str(field) for field in payload if field not in expected_top_level)
+    extra_fields.extend(
+        f"scores.{field}" for field in raw_scores if field not in set(expected_features)
+    )
+    extra_fields.extend(
+        f"observations.{field}"
+        for field in raw_observations
+        if field not in set(expected_features)
+    )
+    parse_error = None
+    if missing_score_fields or invalid_scores:
+        parse_error = "JSON did not contain every expected numeric score within scale"
+    structure_warning = None
+    if missing_observations or overall_reason is None or extra_fields:
+        structure_warning = "JSON evidence fields did not exactly match the requested structure"
+
+    return {
+        "feature_scores": {
+            feature: parsed_scores[feature]
+            for feature in expected_features
+            if feature in parsed_scores
+        },
+        "feature_observations": feature_observations,
+        "overall_score": parsed_scores.get("overall_score"),
+        "overall_reason": overall_reason,
+        "missing_fields": missing_fields,
+        "extra_fields": extra_fields,
+        "invalid_scores": invalid_scores,
+        "structure_warning": structure_warning,
+        "parse_error": parse_error,
+    }
+
+
 def read_requests(path: Path, limit: int | None) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     with path.open("r", encoding="utf-8") as handle:
@@ -374,6 +468,31 @@ def build_prediction(request: dict[str, Any], text: str, model_name: str) -> dic
                 f"raw_parsed_opposite_score_{score_field_suffix(request['raw_score_scale'])}": parsed[
                     "opposite_score"
                 ],
+                "raw_parse_error": parsed["parse_error"],
+            }
+        )
+        return prediction
+
+    if mode == "quality_features_1_10":
+        parsed = parse_quality_feature_scores(
+            text,
+            request["scored_features"],
+            request["raw_score_scale"],
+        )
+        suffix = score_field_suffix(request["raw_score_scale"])
+        prediction.update(
+            {
+                "scored_features": request["scored_features"],
+                "raw_parsed_feature_scores": parsed["feature_scores"],
+                f"raw_parsed_feature_scores_{suffix}": parsed["feature_scores"],
+                "raw_feature_observations": parsed["feature_observations"],
+                "raw_parsed_score": parsed["overall_score"],
+                f"raw_parsed_score_{suffix}": parsed["overall_score"],
+                "raw_overall_reason": parsed["overall_reason"],
+                "raw_missing_fields": parsed["missing_fields"],
+                "raw_extra_fields": parsed["extra_fields"],
+                "raw_invalid_scores": parsed["invalid_scores"],
+                "raw_structure_warning": parsed["structure_warning"],
                 "raw_parse_error": parsed["parse_error"],
             }
         )
